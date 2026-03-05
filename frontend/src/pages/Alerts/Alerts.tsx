@@ -17,7 +17,7 @@ export default function Alerts() {
   const { data: breaches,   isLoading: loadBr  } = useSlaBreaches();
   const { data: errors,     isLoading: loadErr } = useErrorSummary();
   const { data: retries,    isLoading: loadRet } = useRetryRuns();
-  const { data: failed,     isLoading: loadFail} = useFailedRuns();
+  const { data: failed } = useFailedRuns();
 
   const slaPieData = slaSummary ? [
     { name: 'Met',     value: slaSummary.slaMetCount    },
