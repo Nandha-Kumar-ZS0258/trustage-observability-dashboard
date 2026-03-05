@@ -1,0 +1,60 @@
+# ============================================================
+# .NET / ASP.NET Core
+# ============================================================
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.log
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# Publish output
+publish/
+out/
+
+# ============================================================
+# Frontend (Node / Vite / React)
+# ============================================================
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Vite cache
+.vite/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# ============================================================
+# Environment & Secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+# ============================================================
+# OS
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# IDE
+# ============================================================
+.idea/
+.vscode/
+*.swp
+*.swo
