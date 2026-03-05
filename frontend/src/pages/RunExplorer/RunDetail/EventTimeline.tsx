@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import type { RunEvent } from '../../../types/telemetry';
 
 const EVENT_ORDER = [

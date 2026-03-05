@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
-  LayoutDashboard, Search, Building2, Zap, ShieldCheck, Bell,
+  LayoutDashboard, Search, Zap, ShieldCheck, Bell,
 } from 'lucide-react';
 
 const navItems = [
