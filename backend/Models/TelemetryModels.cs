@@ -321,3 +321,84 @@ public class RunFilters
     public bool? SlaBreach { get; set; }
     public string? Status { get; set; }
 }
+
+// ─── CU Setup & Configuration ─────────────────────────────────────────────────
+
+public class CuSetupKpiDto
+{
+    public int TotalCus { get; set; }
+    public int ActiveCount { get; set; }
+    public int OnboardingCount { get; set; }
+    public int InactiveCount { get; set; }
+}
+
+public class CuConfigurationDto
+{
+    public string CuId { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string AdapterId { get; set; } = "";
+    public string ContainerName { get; set; } = "";
+    public string? FileTypes { get; set; }
+    public int SlaThresholdMs { get; set; }
+    public string? MappingVersion { get; set; }
+    public string Environment { get; set; } = "";
+    public DateOnly OnboardingDate { get; set; }
+    public string OnboardingStatus { get; set; } = "";
+    public string? OwnerTeam { get; set; }
+    public string? Notes { get; set; }
+    public DateTimeOffset? FirstRunAt { get; set; }
+    public bool HasDrift { get; set; }
+}
+
+public class CuDriftRowDto
+{
+    public string CuId { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Field { get; set; } = "";
+    public string Configured { get; set; } = "";
+    public string? Observed { get; set; }
+    public bool IsDrift { get; set; }
+}
+
+public class OnboardingMonthDto
+{
+    public string Month { get; set; } = "";
+    public int Count { get; set; }
+}
+
+public class AdapterSpreadDto
+{
+    public string AdapterId { get; set; } = "";
+    public int Count { get; set; }
+}
+
+public class MappingSpreadDto
+{
+    public string MappingVersion { get; set; } = "";
+    public int Count { get; set; }
+}
+
+public class FirstDeliveryGapDto
+{
+    public string DisplayName { get; set; } = "";
+    public string CuId { get; set; } = "";
+    public int? GapDays { get; set; }
+    public string OnboardingStatus { get; set; } = "";
+}
+
+public class OwnerTeamDto
+{
+    public string OwnerTeam { get; set; } = "";
+    public int TotalCus { get; set; }
+    public int ActiveCount { get; set; }
+    public int OnboardingCount { get; set; }
+    public double? AvgSuccessRate { get; set; }
+}
+
+public class CuDirectoryFilters
+{
+    public string? Status { get; set; }
+    public string? Environment { get; set; }
+    public string? OwnerTeam { get; set; }
+    public string? AdapterId { get; set; }
+}

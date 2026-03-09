@@ -288,6 +288,80 @@ export interface FailedRun {
   timestamp: string;
 }
 
+// ─── CU Setup & Configuration ─────────────────────────────────────────────────
+
+export interface CuSetupKpi {
+  totalCus: number;
+  activeCount: number;
+  onboardingCount: number;
+  inactiveCount: number;
+}
+
+export type OnboardingStatus = 'active' | 'onboarding' | 'inactive';
+
+export interface CuConfiguration {
+  cuId: string;
+  displayName: string;
+  adapterId: string;
+  containerName: string;
+  fileTypes: string | null;
+  slaThresholdMs: number;
+  mappingVersion: string | null;
+  environment: string;
+  onboardingDate: string;
+  onboardingStatus: OnboardingStatus;
+  ownerTeam: string | null;
+  notes: string | null;
+  firstRunAt: string | null;
+  hasDrift: boolean;
+}
+
+export interface CuDriftRow {
+  cuId: string;
+  displayName: string;
+  field: string;
+  configured: string;
+  observed: string | null;
+  isDrift: boolean;
+}
+
+export interface OnboardingMonth {
+  month: string;
+  count: number;
+}
+
+export interface AdapterSpread {
+  adapterId: string;
+  count: number;
+}
+
+export interface MappingSpread {
+  mappingVersion: string;
+  count: number;
+}
+
+export interface FirstDeliveryGap {
+  displayName: string;
+  cuId: string;
+  gapDays: number | null;
+  onboardingStatus: OnboardingStatus;
+}
+
+export interface OwnerTeamLoad {
+  ownerTeam: string;
+  totalCus: number;
+  activeCount: number;
+  onboardingCount: number;
+  avgSuccessRate: number | null;
+}
+
+export interface CuDirectoryFilters {
+  status?: string;
+  environment?: string;
+  ownerTeam?: string;
+  adapterId?: string;
+}
+
 // ─── Filter types ─────────────────────────────────────────────────────────────
 
 export interface RunFilters {

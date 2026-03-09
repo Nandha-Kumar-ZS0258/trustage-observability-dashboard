@@ -5,6 +5,7 @@ using TruStage.Observability.Api.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<ObservabilityRepository>();
+builder.Services.AddScoped<CuConfigurationRepository>();
 builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
@@ -33,6 +34,7 @@ app.MapCuEndpoints();
 app.MapPerformanceEndpoints();
 app.MapValidationEndpoints();
 app.MapAlertEndpoints();
+app.MapCuSetupEndpoints();
 
 app.MapHub<TelemetryHub>("/hubs/telemetry");
 

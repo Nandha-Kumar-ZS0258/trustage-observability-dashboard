@@ -10,6 +10,7 @@ const CuDetail     = lazy(() => import('./pages/CuDetail/CuDetail'));
 const Performance  = lazy(() => import('./pages/Performance/Performance'));
 const SchemaHealth = lazy(() => import('./pages/SchemaHealth/SchemaHealth'));
 const Alerts       = lazy(() => import('./pages/Alerts/Alerts'));
+const CuSetup      = lazy(() => import('./pages/CuSetup/CuSetup'));
 
 function PageLoader() {
   return <div className="p-6"><LoadingSpinner /></div>;
@@ -26,7 +27,8 @@ export default function App() {
           <Route path="cu/:cuId" element={<Suspense fallback={<PageLoader />}><CuDetail /></Suspense>} />
           <Route path="performance" element={<Suspense fallback={<PageLoader />}><Performance /></Suspense>} />
           <Route path="schema-health" element={<Suspense fallback={<PageLoader />}><SchemaHealth /></Suspense>} />
-          <Route path="alerts" element={<Suspense fallback={<PageLoader />}><Alerts /></Suspense>} />
+          <Route path="alerts"    element={<Suspense fallback={<PageLoader />}><Alerts /></Suspense>} />
+          <Route path="cu-setup"  element={<Suspense fallback={<PageLoader />}><CuSetup /></Suspense>} />
         </Route>
       </Routes>
     </BrowserRouter>

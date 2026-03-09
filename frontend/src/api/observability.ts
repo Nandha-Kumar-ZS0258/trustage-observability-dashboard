@@ -6,6 +6,8 @@ import type {
   StageDurationHeatmap, ThroughputTrend, SlowestRun, StageSplit, MemoryTrend,
   SchemaHealthRow, ValidationFailure, SchemaDriftAlert, ColumnAnomaly,
   SlaSummary, SlaBreach, ErrorSummary, RetryRun, FailedRun,
+  CuSetupKpi, CuConfiguration, CuDriftRow, OnboardingMonth,
+  AdapterSpread, MappingSpread, FirstDeliveryGap, OwnerTeamLoad, CuDirectoryFilters,
 } from '../types/telemetry';
 
 const api = axios.create({ baseURL: '/observability' });
@@ -57,3 +59,15 @@ export const fetchSlaBreaches = (): Promise<SlaBreach[]>  => api.get('/alerts/sl
 export const fetchErrorSummary = (): Promise<ErrorSummary[]> => api.get('/alerts/errors').then(r => r.data);
 export const fetchRetryRuns   = (): Promise<RetryRun[]>   => api.get('/alerts/retries').then(r => r.data);
 export const fetchFailedRuns  = (): Promise<FailedRun[]>  => api.get('/alerts/failed-runs').then(r => r.data);
+
+// ─── CU Setup & Configuration ─────────────────────────────────────────────────
+
+export const fetchCuSetupKpis        = (): Promise<CuSetupKpi>            => api.get('/cu-setup/kpis').then(r => r.data);
+export const fetchCuDirectory        = (f: CuDirectoryFilters): Promise<CuConfiguration[]> => api.get('/cu-setup', { params: f }).then(r => r.data);
+export const fetchCuDrift            = (): Promise<CuDriftRow[]>           => api.get('/cu-setup/drift').then(r => r.data);
+export const fetchCuDriftDetail      = (cuId: string): Promise<CuDriftRow[]> => api.get(`/cu-setup/${cuId}/drift`).then(r => r.data);
+export const fetchOnboardingTimeline = (): Promise<OnboardingMonth[]>      => api.get('/cu-setup/onboarding-timeline').then(r => r.data);
+export const fetchAdapterSpread      = (): Promise<AdapterSpread[]>        => api.get('/cu-setup/adapter-spread').then(r => r.data);
+export const fetchMappingSpread      = (): Promise<MappingSpread[]>        => api.get('/cu-setup/mapping-spread').then(r => r.data);
+export const fetchFirstDeliveryGap   = (): Promise<FirstDeliveryGap[]>     => api.get('/cu-setup/first-delivery-gap').then(r => r.data);
+export const fetchOwnerTeams         = (): Promise<OwnerTeamLoad[]>        => api.get('/cu-setup/owner-teams').then(r => r.data);

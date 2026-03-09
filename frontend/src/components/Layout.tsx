@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
-  LayoutDashboard, Search, Zap, ShieldCheck, Bell,
+  LayoutDashboard, Search, Zap, ShieldCheck, Bell, Building2,
 } from 'lucide-react';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/performance',   label: 'Performance',   icon: Zap             },
   { to: '/schema-health', label: 'Schema Health', icon: ShieldCheck     },
   { to: '/alerts',        label: 'Alerts & SLA',  icon: Bell            },
+  { to: '/cu-setup',      label: 'CU Setup',      icon: Building2       },
 ];
 
 export function Layout() {
