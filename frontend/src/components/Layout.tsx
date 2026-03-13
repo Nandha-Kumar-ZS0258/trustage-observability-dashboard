@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
-  LayoutGrid, Inbox, History, Building, AlertTriangle, Zap, ShieldCheck,
+  LayoutGrid, Inbox, History, Building, AlertTriangle, FlaskConical,
 } from 'lucide-react';
 import { useUnresolvedCount } from '../hooks/useUnresolvedCount';
 
@@ -91,15 +91,10 @@ export function Layout() {
           {/* ── Separator ─────────────────────────────────────────────── */}
           <div className="my-2 border-t border-gray-800" />
 
-          {/* ── Secondary navigation (kept from previous version) ─────── */}
-          <NavLink to="/performance" className={({ isActive }) => linkClass(isActive)}>
-            <Zap className="w-4 h-4 shrink-0" />
-            Performance
-          </NavLink>
-
-          <NavLink to="/schema-health" className={({ isActive }) => linkClass(isActive)}>
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            Schema Health
+          {/* ── Demo tab ───────────────────────────────────────────────── */}
+          <NavLink to="/demo" className={({ isActive }) => linkClass(isActive)}>
+            <FlaskConical className="w-4 h-4 shrink-0" />
+            Demo
           </NavLink>
         </nav>
 
@@ -109,7 +104,7 @@ export function Layout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
         <Outlet />
       </main>
     </div>

@@ -10,14 +10,13 @@ const FeedHistory     = lazy(() => import('./pages/FeedHistory/FeedHistory'));
 const FeedExceptions  = lazy(() => import('./pages/FeedExceptions/FeedExceptions'));
 
 // ─── Existing pages ───────────────────────────────────────────────────────────
-const Overview     = lazy(() => import('./pages/Overview/Overview'));
-const RunExplorer  = lazy(() => import('./pages/RunExplorer/RunExplorer'));
-const RunDetail    = lazy(() => import('./pages/RunExplorer/RunDetail/RunDetail'));
-const CuDetail     = lazy(() => import('./pages/CuDetail/CuDetail'));
-const Performance  = lazy(() => import('./pages/Performance/Performance'));
-const SchemaHealth = lazy(() => import('./pages/SchemaHealth/SchemaHealth'));
-const Alerts       = lazy(() => import('./pages/Alerts/Alerts'));
-const CuSetup      = lazy(() => import('./pages/CuSetup/CuSetup'));
+const Overview    = lazy(() => import('./pages/Overview/Overview'));
+const RunExplorer = lazy(() => import('./pages/RunExplorer/RunExplorer'));
+const RunDetail   = lazy(() => import('./pages/RunExplorer/RunDetail/RunDetail'));
+const CuDetail    = lazy(() => import('./pages/CuDetail/CuDetail'));
+const Alerts      = lazy(() => import('./pages/Alerts/Alerts'));
+const CuSetup     = lazy(() => import('./pages/CuSetup/CuSetup'));
+const Demo        = lazy(() => import('./pages/Demo/Demo'));
 
 function PageLoader() {
   return <div className="p-6"><LoadingSpinner /></div>;
@@ -37,8 +36,7 @@ export default function App() {
           <Route path="exceptions" element={<Suspense fallback={<PageLoader />}><FeedExceptions /></Suspense>} />
 
           {/* ── Existing routes (unchanged) ──────────────────────────────── */}
-          <Route path="performance"   element={<Suspense fallback={<PageLoader />}><Performance /></Suspense>} />
-          <Route path="schema-health" element={<Suspense fallback={<PageLoader />}><SchemaHealth /></Suspense>} />
+          <Route path="demo"          element={<Suspense fallback={<PageLoader />}><Demo /></Suspense>} />
           <Route path="runs"          element={<Suspense fallback={<PageLoader />}><RunExplorer /></Suspense>} />
           <Route path="runs/:correlationId" element={<Suspense fallback={<PageLoader />}><RunDetail /></Suspense>} />
           <Route path="overview"      element={<Suspense fallback={<PageLoader />}><Overview /></Suspense>} />

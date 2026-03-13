@@ -1,6 +1,7 @@
 using TruStage.Observability.Api.Endpoints;
 using TruStage.Observability.Api.Hubs;
 using TruStage.Observability.Api.Repositories;
+using TruStage.Observability.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,10 @@ builder.Services.AddScoped<CuConfigurationRepository>();
 builder.Services.AddScoped<ProgrammeRepository>();
 builder.Services.AddScoped<FeedsRepository>();
 builder.Services.AddScoped<ExceptionRepository>();
+
+builder.Services.AddSingleton<DemoTraceService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<DemoTraceService>());
+
 builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
@@ -43,6 +48,7 @@ app.MapProgrammeEndpoints();
 app.MapFeedsEndpoints();
 app.MapHistoryEndpoints();
 app.MapExceptionEndpoints();
+app.MapDemoEndpoints();
 
 app.MapHub<TelemetryHub>("/hubs/telemetry");
 

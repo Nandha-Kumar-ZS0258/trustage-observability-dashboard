@@ -4,31 +4,29 @@
 
 @layer base {
   body {
-    @apply bg-gray-950 text-gray-100 antialiased;
+    @apply bg-[#F8FAFC] text-[#0F172A] antialiased;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
   }
 
-  ::-webkit-scrollbar {
-    @apply w-1.5 h-1.5;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-gray-900;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-gray-700 rounded-full;
-  }
+  ::-webkit-scrollbar       { @apply w-1.5 h-1.5; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 }
 
 @layer components {
   .card {
-    @apply bg-gray-900 border border-gray-800 rounded-xl p-4;
+    @apply bg-white border border-[#E2E8F0] rounded-xl p-4;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
   }
 
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors;
+    @apply bg-[#1A6DB5] hover:bg-[#0F2744] text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors;
   }
 
   .btn-ghost {
-    @apply text-gray-400 hover:text-white hover:bg-gray-800 text-sm px-3 py-1.5 rounded-lg transition-colors;
+    @apply text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-sm px-3 py-1.5 rounded-lg transition-colors;
+    border: 1px solid #e2e8f0;
   }
 
   .badge {
@@ -36,17 +34,136 @@
   }
 
   .table-row-hover {
-    @apply hover:bg-gray-800/50 cursor-pointer transition-colors;
+    @apply hover:bg-[#EFF6FF] cursor-pointer transition-colors;
   }
 
   .input {
-    @apply bg-gray-800 border border-gray-700 text-gray-100 text-sm rounded-lg px-3 py-1.5
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-           placeholder-gray-500 w-full;
+    @apply bg-white border border-[#E2E8F0] text-slate-800 text-sm rounded-lg px-3 py-1.5
+           focus:outline-none focus:ring-2 focus:ring-[#1A6DB5] focus:border-transparent
+           placeholder-slate-400 w-full;
   }
 
   .select {
-    @apply bg-gray-800 border border-gray-700 text-gray-100 text-sm rounded-lg px-3 py-1.5
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full;
+    @apply bg-white border border-[#E2E8F0] text-slate-800 text-sm rounded-lg px-3 py-1.5
+           focus:outline-none focus:ring-2 focus:ring-[#1A6DB5] focus:border-transparent w-full;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIGHT THEME — main content area overrides
+   Sidebar keeps dark (bg-gray-900 on <aside> wins over these main-scoped rules).
+   Nav headers using bg-[#0F2744] are unaffected (they use a custom value, not
+   a gray Tailwind class).
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Card / panel backgrounds ─────────────────────────────────────────── */
+main .bg-gray-900  { background-color: #ffffff !important; }
+main .bg-gray-950  { background-color: #ffffff !important; }
+main .bg-gray-800  { background-color: #f8fafc !important; }
+
+/* ── Translucent / opacity dark variants ──────────────────────────────── */
+main .bg-gray-800\/40,
+main .bg-gray-800\/30,
+main .bg-gray-800\/60 { background-color: #f8fafc !important; }
+
+main .bg-gray-900\/30,
+main .bg-gray-900\/50,
+main .bg-gray-900\/70 { background-color: #f8fafc !important; }
+
+main .bg-gray-700\/60,
+main .bg-gray-700\/70 { background-color: #f1f5f9 !important; }
+
+/* ── Status tinted backgrounds ────────────────────────────────────────── */
+main .bg-emerald-900\/60,
+main .bg-emerald-950\/40 { background-color: #dcfce7 !important; }
+
+main .bg-red-900\/60,
+main .bg-red-900\/40,
+main .bg-red-950\/30,
+main .bg-red-950\/25,
+main .bg-red-950\/50 { background-color: #fee2e2 !important; }
+
+main .bg-amber-900\/60,
+main .bg-amber-900\/40,
+main .bg-amber-950\/40 { background-color: #fef3c7 !important; }
+
+main .bg-green-900\/40,
+main .bg-emerald-950\/20 { background-color: #f0fdf4 !important; }
+
+main .bg-blue-900\/40,
+main .bg-blue-950\/30,
+main .bg-blue-950\/40,
+main .bg-blue-950\/60 { background-color: #eff6ff !important; }
+
+/* ── Translucent status highlights (\/15 pattern) ─────────────────────── */
+main .bg-emerald-500\/15 { background-color: #dcfce7 !important; }
+main .bg-red-500\/15     { background-color: #fee2e2 !important; }
+main .bg-amber-500\/15   { background-color: #fef3c7 !important; }
+main .bg-blue-500\/15    { background-color: #dbeafe !important; }
+main .bg-teal-500\/15    { background-color: #ccfbf1 !important; }
+main .bg-gray-500\/15    { background-color: #f1f5f9 !important; }
+
+/* ── Borders ──────────────────────────────────────────────────────────── */
+main .border-gray-900 { border-color: #f1f5f9 !important; }
+main .border-gray-800 { border-color: #e2e8f0 !important; }
+main .border-gray-700 { border-color: #e2e8f0 !important; }
+
+/* ── Text: inside converted dark card containers ──────────────────────── */
+/* bg-gray-900 and bg-gray-950 cards become white, so darken their text   */
+main .bg-gray-900 .text-white,
+main .bg-gray-900 .text-gray-100,
+main .bg-gray-900 .text-gray-200,
+main .bg-gray-900 .text-gray-300 { color: #334155 !important; }
+
+main .bg-gray-950 .text-white,
+main .bg-gray-950 .text-gray-100,
+main .bg-gray-950 .text-gray-200,
+main .bg-gray-950 .text-gray-300 { color: #334155 !important; }
+
+/* ── Standalone muted text ────────────────────────────────────────────── */
+main .text-gray-300 { color: #475569 !important; }
+main .text-gray-400 { color: #64748b !important; }
+main .text-gray-500 { color: #94a3b8 !important; }
+main .text-gray-600 { color: #94a3b8 !important; }
+
+/* ── Accent colors — darken for legibility on white ──────────────────── */
+main .text-emerald-400 { color: #15803d !important; }
+main .text-amber-400   { color: #b45309 !important; }
+main .text-red-400     { color: #b91c1c !important; }
+main .text-blue-400    { color: #1d4ed8 !important; }
+main .text-teal-400    { color: #0f766e !important; }
+main .text-blue-300    { color: #1d4ed8 !important; }
+main .text-red-300     { color: #b91c1c !important; }
+main .text-green-400,
+main .text-green-500   { color: #15803d !important; }
+main .text-amber-300   { color: #b45309 !important; }
+
+/* ── Opacity text variants ────────────────────────────────────────────── */
+main .text-white\/40  { color: #94a3b8 !important; }
+main .text-white\/50  { color: #64748b !important; }
+main .text-white\/60  { color: #475569 !important; }
+main .text-white\/80  { color: #334155 !important; }
+
+/* ── Hover states ─────────────────────────────────────────────────────── */
+main .hover\:bg-gray-800:hover,
+main .hover\:bg-gray-800\/50:hover { background-color: #f8fafc !important; }
+main .hover\:text-white:hover      { color: #0f172a !important; }
+
+/* ── Ring/focus for inputs ────────────────────────────────────────────── */
+main .ring-gray-700 { --tw-ring-color: #e2e8f0 !important; }
+
+/* ── Navy bg-[#0F2744] containers — restore white text ───────────────── */
+/* Section headers (Delivery Schedule, Live Feed Events, table headers)   */
+/* use custom navy color; their descendant text must remain white/light.  */
+main [class*="bg-[#0F2744]"] .text-white,
+main [class*="bg-[#0F2744]"] .text-gray-100,
+main [class*="bg-[#0F2744]"] .text-gray-200,
+main [class*="bg-[#0F2744]"] .text-gray-300,
+main [class*="bg-[#0F2744]"] .text-gray-400,
+main [class*="bg-[#0F2744]"] .text-gray-500,
+main [class*="bg-[#0F2744]"] .text-gray-600 { color: #ffffff !important; }
+
+main [class*="bg-[#0F2744]"] .text-white\/80 { color: rgba(255,255,255,.85) !important; }
+main [class*="bg-[#0F2744]"] .text-white\/60 { color: rgba(255,255,255,.65) !important; }
+main [class*="bg-[#0F2744]"] .text-white\/50 { color: rgba(255,255,255,.55) !important; }
+main [class*="bg-[#0F2744]"] .text-white\/40 { color: rgba(255,255,255,.45) !important; }

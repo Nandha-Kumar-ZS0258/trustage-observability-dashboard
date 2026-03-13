@@ -7,4 +7,7 @@ public class TelemetryHub : Hub
 {
     public async Task BroadcastEvent(LiveFeedEventDto evt) =>
         await Clients.All.SendAsync("NewEvent", evt);
+
+    public async Task BroadcastPipelineLog(PipelineLogEventDto evt) =>
+        await Clients.All.SendAsync("PipelineLog", evt);
 }

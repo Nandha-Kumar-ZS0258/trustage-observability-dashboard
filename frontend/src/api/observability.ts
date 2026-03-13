@@ -9,6 +9,7 @@ import type {
   CuSetupKpi, CuConfiguration, CuDriftRow, OnboardingMonth,
   AdapterSpread, MappingSpread, FirstDeliveryGap, OwnerTeamLoad, CuDirectoryFilters,
 } from '../types/telemetry';
+import type { DemoUploadResult } from '../types/demo';
 
 const api = axios.create({ baseURL: '/observability' });
 
@@ -71,3 +72,13 @@ export const fetchAdapterSpread      = (): Promise<AdapterSpread[]>        => ap
 export const fetchMappingSpread      = (): Promise<MappingSpread[]>        => api.get('/cu-setup/mapping-spread').then(r => r.data);
 export const fetchFirstDeliveryGap   = (): Promise<FirstDeliveryGap[]>     => api.get('/cu-setup/first-delivery-gap').then(r => r.data);
 export const fetchOwnerTeams         = (): Promise<OwnerTeamLoad[]>        => api.get('/cu-setup/owner-teams').then(r => r.data);
+
+// ─── Demo / Pipeline Trace ────────────────────────────────────────────────────
+
+const apiBase = axios.create({ baseURL: '/api' });
+
+export const uploadDemoFile = (file: File): Promise<DemoUploadResult> => {
+  const form = new FormData();
+  form.append('file', file);
+  return apiBase.post('/demo/upload', form).then(r => r.data);
+};
