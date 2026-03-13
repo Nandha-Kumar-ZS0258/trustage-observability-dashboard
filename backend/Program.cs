@@ -6,6 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<ObservabilityRepository>();
 builder.Services.AddScoped<CuConfigurationRepository>();
+builder.Services.AddScoped<ProgrammeRepository>();
+builder.Services.AddScoped<FeedsRepository>();
+builder.Services.AddScoped<ExceptionRepository>();
 builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
@@ -35,6 +38,11 @@ app.MapPerformanceEndpoints();
 app.MapValidationEndpoints();
 app.MapAlertEndpoints();
 app.MapCuSetupEndpoints();
+
+app.MapProgrammeEndpoints();
+app.MapFeedsEndpoints();
+app.MapHistoryEndpoints();
+app.MapExceptionEndpoints();
 
 app.MapHub<TelemetryHub>("/hubs/telemetry");
 

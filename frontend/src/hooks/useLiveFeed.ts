@@ -15,6 +15,10 @@ export const useLiveFeed = () => {
       queryClient.invalidateQueries({ queryKey: ['overview-kpis'] });
       queryClient.invalidateQueries({ queryKey: ['live-feed'] });
       queryClient.invalidateQueries({ queryKey: ['cu-health'] });
+      queryClient.invalidateQueries({ queryKey: ['feed-ticker'] });
+      queryClient.invalidateQueries({ queryKey: ['today-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['cu-status-grid'] });
+      queryClient.invalidateQueries({ queryKey: ['unresolved-count'] });
     });
 
     conn.start().catch(console.error);
