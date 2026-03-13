@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "Bash(cd \"C:\\\\Users\\\\soundarya.gg\\\\Workspace\\\\TrustageWebApp\\\\trustage-observability-dashboard\\\\frontend\" && npm run build 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\soundarya.gg\\\\Workspace\\\\TrustageWebApp\\\\trustage-observability-dashboard\\\\frontend\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\soundarya.gg\\\\Workspace\\\\TrustageWebApp\\\\trustage-observability-dashboard\\\\frontend\" && ./node_modules/.bin/tsc --noEmit 2>&1)",
+      "Bash(cd /c/Users/soundarya.gg/Workspace/TrustageWebApp/trustage-observability-dashboard/frontend && npm install 2>&1)",
+      "Bash(./node_modules/.bin/tsc --noEmit 2>&1)",
+      "Bash(./node_modules/.bin/vite build:*)",
+      "Bash(cd /c/Users/soundarya.gg/Workspace/TrustageWebApp/trustage-observability-dashboard/backend && dotnet build --configuration Release 2>&1)",
+      "Bash(git -C /c/Users/soundarya.gg/Workspace/TrustageWebApp/trustage-observability-dashboard diff --name-only HEAD -- frontend/src/pages/Performance/ frontend/src/pages/SchemaHealth/ backend/Repositories/ObservabilityRepository.cs backend/Models/TelemetryModels.cs 2>&1)"
+    ]
+  }
+}

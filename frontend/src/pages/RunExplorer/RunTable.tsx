@@ -26,7 +26,7 @@ export function RunTable({ runs }: RunTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-800 text-left">
-            {['CU', 'File', 'Type', 'Started', 'Duration', 'Rows', 'Failed', 'Validation', 'SLA', ''].map(h => (
+            {['CU', 'File', 'Type', 'Started', 'Duration', 'Member Records', 'Records Rejected', 'Data Validation', 'SLA', ''].map(h => (
               <th key={h} className="pb-2.5 pr-4 text-xs text-gray-500 font-medium whitespace-nowrap">{h}</th>
             ))}
           </tr>

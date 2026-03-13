@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { clsx } from 'clsx';
 import { parseISO, format, startOfDay, differenceInMinutes } from 'date-fns';
 import type { GanttEntry, FeedStatus } from '../../types/programme';
 import { useGanttData } from '../../hooks/useTodaysFeeds';
@@ -165,8 +164,8 @@ function GanttRow({ entry, now, onBarClick }: GanttRowProps) {
 
       {/* Track */}
       <div className="flex-1 relative h-7 bg-gray-800/40 rounded" style={{ minWidth: '400px' }}>
-        {/* Expected window band */}
-        {hasSchedule && !isOverdue && (
+        {/* Expected window band — always shown when CU_Schedule exists (per spec) */}
+        {hasSchedule && (
           <ExpectedBand
             windowStart={entry.expectedWindowStart!}
             windowEnd={entry.expectedWindowEnd!}
@@ -227,11 +226,19 @@ function nowMinutes(): number {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function DeliveryGantt() {
+interface DeliveryGanttProps {
+  /** When provided, only the row for this CU is rendered (CU Detail scoped view). */
+  cuId?: string;
+}
+
+export function DeliveryGantt({ cuId }: DeliveryGanttProps = {}) {
   const [selectedFeedRefId, setSelectedFeedRefId] = useState<string | null>(null);
 
   const { data: rawData, isLoading } = useGanttData();
-  const entries: GanttEntry[] = Array.isArray(rawData) ? rawData : [];
+  const allEntries: GanttEntry[] = Array.isArray(rawData) ? rawData : [];
+  const entries = cuId
+    ? allEntries.filter(e => e.cuId === cuId)
+    : allEntries;
 
   const now = new Date();
   const nowMin = nowMinutes();
@@ -242,7 +249,7 @@ export function DeliveryGantt() {
         {/* Navy header */}
         <div className="bg-[#0F2744] px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
           <h3 className="text-sm font-bold text-white shrink-0">
-            Delivery Schedule — Today
+            {cuId ? "Today's Delivery" : 'Delivery Schedule — Today'}
           </h3>
           <Legend />
         </div>

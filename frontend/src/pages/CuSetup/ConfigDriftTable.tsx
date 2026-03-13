@@ -16,9 +16,9 @@ export function ConfigDriftTable() {
     <div className="card">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">Config vs Reality Drift</h2>
+          <h2 className="text-sm font-semibold text-white">CU Format Change Detection</h2>
           {driftCount > 0 && (
-            <p className="text-xs text-red-400 mt-0.5">{driftCount} drift{driftCount !== 1 ? 's' : ''} detected</p>
+            <p className="text-xs text-red-400 mt-0.5">{driftCount} CU format change{driftCount !== 1 ? 's' : ''} detected</p>
           )}
         </div>
         <input
@@ -32,7 +32,7 @@ export function ConfigDriftTable() {
       {isLoading ? (
         <p className="text-xs text-gray-500 py-4">Loading...</p>
       ) : !rows?.length ? (
-        <p className="text-xs text-gray-500 py-4">No drift data available.</p>
+        <p className="text-xs text-gray-500 py-4">No CU format change data available.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -59,7 +59,7 @@ export function ConfigDriftTable() {
                         ? 'bg-red-500/10 text-red-400'
                         : 'bg-emerald-500/10 text-emerald-400'
                     )}>
-                      {row.isDrift ? 'DRIFT' : 'OK'}
+                      {row.isDrift ? 'FORMAT CHANGE' : 'OK'}
                     </span>
                   </td>
                 </tr>

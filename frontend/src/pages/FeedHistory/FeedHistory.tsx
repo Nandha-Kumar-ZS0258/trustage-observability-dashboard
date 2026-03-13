@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { FeedFilters, defaultFilters } from './FeedFilters';
 import { FeedListTable } from './FeedListTable';
 import type { FeedFilterValues } from './FeedFilters';
@@ -16,6 +17,7 @@ function toApiFilters(f: FeedFilterValues): FeedListFilters {
 }
 
 export default function FeedHistory() {
+  const { feedRefId } = useParams<{ feedRefId?: string }>();
   const [filters, setFilters] = useState<FeedFilterValues>(defaultFilters);
 
   return (
@@ -32,7 +34,7 @@ export default function FeedHistory() {
       <FeedFilters filters={filters} onChange={setFilters} />
 
       {/* Feed list table + detail panel */}
-      <FeedListTable filters={toApiFilters(filters)} />
+      <FeedListTable filters={toApiFilters(filters)} initialFeedRefId={feedRefId} />
     </div>
   );
 }

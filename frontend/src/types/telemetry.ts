@@ -173,6 +173,18 @@ export interface ErrorFrequency {
   count: number;
 }
 
+/** Per-feed step timing point for the Step Timing Trend stacked area chart.
+ *  Source: kafka.PipelineStageTimings grouped by feed/date, one row per feed.
+ *  Stage name → UI label mapping per MONITORING_SPEC.md Section 4.4. */
+export interface StepTimingPoint {
+  date: string;
+  receiveCuFileMs:        number | null; // Ingestion stage
+  dataValidationMs:       number | null; // SchemaValidation stage
+  applyStandardisationMs: number | null; // Transform stage
+  standardiseTransformMs: number | null; // RulesValidation stage
+  writeToStandardMs:      number | null; // Publishing stage
+}
+
 // ─── Performance ─────────────────────────────────────────────────────────────
 
 export interface StageDurationHeatmap {

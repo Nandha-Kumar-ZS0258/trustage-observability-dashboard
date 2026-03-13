@@ -28,7 +28,7 @@ export default function Alerts() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-lg font-semibold text-white">Alerts & SLA</h1>
-        <p className="text-xs text-gray-500 mt-0.5">SLA compliance, errors, and failed runs</p>
+        <p className="text-xs text-gray-500 mt-0.5">SLA compliance, errors, and failed feeds</p>
       </div>
 
       {/* Failed runs tray */}
@@ -37,7 +37,7 @@ export default function Alerts() {
           <div className="flex items-center gap-2 mb-3">
             <AlertOctagon className="w-4 h-4 text-red-400" />
             <h2 className="text-sm font-semibold text-white">
-              Failed Runs Pending Action ({failed.length})
+              Failed Feeds Pending Action ({failed.length})
             </h2>
           </div>
           <div className="space-y-2">
@@ -68,7 +68,7 @@ export default function Alerts() {
           {loadSla ? <LoadingSpinner /> : slaSummary && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                ['Total Runs',    slaSummary.totalRunsThisMonth.toLocaleString()],
+                ['Total Feeds',    slaSummary.totalRunsThisMonth.toLocaleString()],
                 ['SLA Met',       `${slaSummary.slaMetCount.toLocaleString()} (${slaSummary.slaMetPercent.toFixed(1)}%)`],
                 ['SLA Breached',  `${slaSummary.slaBreachCount.toLocaleString()} (${slaSummary.slaBreachPercent.toFixed(1)}%)`],
                 ['Avg Duration',  slaSummary.avgDurationMs != null ? `${Math.round(slaSummary.avgDurationMs).toLocaleString()}ms` : '—'],

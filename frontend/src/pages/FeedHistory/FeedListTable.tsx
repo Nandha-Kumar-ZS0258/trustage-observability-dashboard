@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { format, parseISO, isToday, isYesterday } from 'date-fns';
 import type { FeedSummary, FeedStatus } from '../../types/programme';
@@ -41,10 +42,17 @@ function FeedStartedCell({ iso }: { iso: string }) {
 
 interface Props {
   filters: FeedListFilters;
+  initialFeedRefId?: string;
 }
 
-export function FeedListTable({ filters }: Props) {
-  const [selectedFeedRefId, setSelectedFeedRefId] = useState<string | null>(null);
+export function FeedListTable({ filters, initialFeedRefId }: Props) {
+  const navigate = useNavigate();
+  const [selectedFeedRefId, setSelectedFeedRefId] = useState<string | null>(initialFeedRefId ?? null);
+
+  // When navigated to /history/:feedRefId, open the panel for that feed
+  useEffect(() => {
+    if (initialFeedRefId) setSelectedFeedRefId(initialFeedRefId);
+  }, [initialFeedRefId]);
 
   const { data: rawData, isLoading } = useFeedList(filters);
   const feeds: FeedSummary[] = Array.isArray(rawData) ? rawData : [];
@@ -107,9 +115,14 @@ export function FeedListTable({ filters }: Props) {
                       </span>
                     </td>
 
-                    {/* CU Partner Name */}
+                    {/* CU Partner Name — link to CU Detail */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="font-semibold text-white text-sm">{feed.cuName}</span>
+                      <button
+                        className="text-blue-400 hover:text-blue-300 font-semibold text-sm text-left"
+                        onClick={e => { e.stopPropagation(); navigate(`/cu/${feed.cuId}`); }}
+                      >
+                        {feed.cuName}
+                      </button>
                     </td>
 
                     {/* Feed Started */}
@@ -173,6 +186,7 @@ export function FeedListTable({ filters }: Props) {
       <FeedDetail
         feedReferenceId={selectedFeedRefId}
         onClose={() => setSelectedFeedRefId(null)}
+        breadcrumb="Feed History"
       />
     </>
   );

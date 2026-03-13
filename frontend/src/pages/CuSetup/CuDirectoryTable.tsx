@@ -58,7 +58,7 @@ export function CuDirectoryTable() {
 
           <input
             className="input w-40"
-            placeholder="Adapter ID..."
+            placeholder="CU Connector ID..."
             onChange={e => set('adapterId', e.target.value)}
           />
         </div>
@@ -72,7 +72,7 @@ export function CuDirectoryTable() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-800">
-                  {['CU Name','CU ID','Status','Env','Owner Team','Adapter','Mapping','SLA','Onboarded','First Run','Drift'].map(h => (
+                  {['CU Name','CU ID','Status','Env','Owner Team','CU Connector','Standardisation Rules','SLA','Onboarded','First Feed','CU Format Change'].map(h => (
                     <th key={h} className="text-left py-2 px-3 text-xs font-medium text-gray-400 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -98,7 +98,7 @@ export function CuDirectoryTable() {
                     </td>
                     <td className="py-2 px-3">
                       {cu.hasDrift
-                        ? <span className="badge bg-red-500/10 text-red-400">DRIFT</span>
+                        ? <span className="badge bg-red-500/10 text-red-400">FORMAT CHANGE</span>
                         : <span className="badge bg-emerald-500/10 text-emerald-400">OK</span>}
                     </td>
                   </tr>

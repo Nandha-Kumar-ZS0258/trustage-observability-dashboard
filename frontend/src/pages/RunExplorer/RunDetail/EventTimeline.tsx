@@ -39,8 +39,8 @@ export function EventTimeline({ events }: EventTimelineProps) {
             <div className="mt-0.5 text-xs text-gray-400 space-y-0.5">
               {e.blobName    && <p>blob: <span className="text-gray-300 font-mono">{e.blobName}</span></p>}
               {e.hostName    && <p>host: <span className="text-gray-300">{e.hostName}</span>{e.memoryUsedMb != null ? `, memory: ${e.memoryUsedMb.toFixed(1)}MB` : ''}</p>}
-              {e.schemaMatchScore != null && <p>schema: <span className="text-gray-300">{e.schemaMatchScore}%</span>, errors: {e.validationErrors ?? 0}</p>}
-              {e.rowsProcessed != null && <p>rows: <span className="text-gray-300">{e.rowsProcessed.toLocaleString()}</span></p>}
+              {e.schemaMatchScore != null && <p>Data Alignment Score: <span className="text-gray-300">{e.schemaMatchScore}%</span>, errors: {e.validationErrors ?? 0}</p>}
+              {e.rowsProcessed != null && <p>member records: <span className="text-gray-300">{e.rowsProcessed.toLocaleString()}</span></p>}
               {e.totalDurationMs != null && <p>duration: <span className="text-gray-300">{e.totalDurationMs.toLocaleString()}ms</span></p>}
             </div>
           </div>

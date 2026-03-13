@@ -12,8 +12,8 @@ export default function RunExplorer() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-lg font-semibold text-white">Run Explorer</h1>
-        <p className="text-xs text-gray-500 mt-0.5">Browse and filter all pipeline runs</p>
+        <h1 className="text-lg font-semibold text-white">Feed History</h1>
+        <p className="text-xs text-gray-500 mt-0.5">Browse and filter all data feeds</p>
       </div>
 
       <RunFiltersBar onFilter={setFilters} />
@@ -21,7 +21,7 @@ export default function RunExplorer() {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-gray-400">
-            {data ? `${data.length.toLocaleString()} runs` : ''}
+            {data ? `${data.length.toLocaleString()} feeds` : ''}
           </span>
         </div>
         {isLoading ? <LoadingSpinner /> : <RunTable runs={data ?? []} />}

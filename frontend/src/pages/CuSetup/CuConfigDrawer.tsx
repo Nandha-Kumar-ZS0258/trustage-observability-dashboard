@@ -48,10 +48,10 @@ export function CuConfigDrawer({ cu, onClose }: Props) {
           <div>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Configuration</h3>
             <Field label="CU ID"           value={cu.cuId} />
-            <Field label="Adapter"          value={cu.adapterId} />
+            <Field label="CU Connector"      value={cu.adapterId} />
             <Field label="Container"        value={cu.containerName} />
             <Field label="File Types"       value={cu.fileTypes} />
-            <Field label="Mapping Version"  value={cu.mappingVersion} />
+            <Field label="Standardisation Rules Version" value={cu.mappingVersion} />
             <Field label="SLA Threshold"    value={`${(cu.slaThresholdMs / 1000).toFixed(0)}s`} />
             <Field label="Environment"      value={cu.environment} />
             <Field label="Onboarding Date"  value={cu.onboardingDate} />
@@ -64,7 +64,7 @@ export function CuConfigDrawer({ cu, onClose }: Props) {
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
               Observed vs Configured
             </h3>
-            <Field label="First Run At" value={cu.firstRunAt ? new Date(cu.firstRunAt).toLocaleDateString() : 'Never'} />
+            <Field label="First Feed At" value={cu.firstRunAt ? new Date(cu.firstRunAt).toLocaleDateString() : 'Never'} />
 
             {driftRows?.map(row => (
               <div key={row.field} className="py-2 border-b border-gray-800/60">
@@ -84,7 +84,7 @@ export function CuConfigDrawer({ cu, onClose }: Props) {
                       ? 'bg-red-500/10 text-red-400'
                       : 'bg-emerald-500/10 text-emerald-400'
                   )}>
-                    {row.isDrift ? 'DRIFT' : 'OK'}
+                    {row.isDrift ? 'FORMAT CHANGE' : 'OK'}
                   </span>
                 </div>
               </div>

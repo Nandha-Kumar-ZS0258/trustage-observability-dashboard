@@ -13,7 +13,7 @@ export function LiveFeed() {
   return (
     <div className="card flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white">Live Pipeline Feed</h2>
+        <h2 className="text-sm font-semibold text-white">Live Feed Events</h2>
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
           {isFetching && <RefreshCw className="w-3 h-3 animate-spin" />}
           <span>auto-refresh 30s</span>

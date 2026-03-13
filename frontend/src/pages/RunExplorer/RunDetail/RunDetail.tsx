@@ -37,7 +37,7 @@ export default function RunDetail() {
 
   if (isLoading) return <div className="p-6"><LoadingSpinner /></div>;
   if (!data) return (
-    <div className="p-6 text-gray-400 text-sm">Run not found.</div>
+    <div className="p-6 text-gray-400 text-sm">Feed not found.</div>
   );
 
   return (
@@ -47,11 +47,11 @@ export default function RunDetail() {
         className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Run Explorer
+        Back to Feed History
       </button>
 
       <div>
-        <h1 className="text-lg font-semibold text-white">Run Detail</h1>
+        <h1 className="text-lg font-semibold text-white">Feed Detail</h1>
         <p className="text-xs text-gray-500 font-mono mt-0.5">{correlationId}</p>
       </div>
 
@@ -60,7 +60,7 @@ export default function RunDetail() {
       </Section>
 
       {data.stageDurations && (
-        <Section title="B — Stage Duration Breakdown">
+        <Section title="B — Step Timing Breakdown">
           <DurationBar
             download={data.stageDurations.download}
             process={data.stageDurations.process}

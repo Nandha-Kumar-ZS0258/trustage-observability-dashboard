@@ -31,7 +31,7 @@ export function BusinessSummary({ business: b }: BusinessSummaryProps) {
         <dd className="mt-0.5"><SlaIndicator breached={b.slaBreach ?? null} /></dd>
       </div>
       <div className="bg-gray-800 rounded-lg p-2.5">
-        <dt className="text-xs text-gray-500">First Run of Day</dt>
+        <dt className="text-xs text-gray-500">First Feed of Day</dt>
         <dd className="text-sm text-white mt-0.5">{b.isFirstRunOfDay ? 'Yes' : 'No'}</dd>
       </div>
       <div className="bg-gray-800 rounded-lg p-2.5">

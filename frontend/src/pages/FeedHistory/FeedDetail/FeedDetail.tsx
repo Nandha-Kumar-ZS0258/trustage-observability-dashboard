@@ -23,11 +23,13 @@ const TABS: { key: Tab; label: string }[] = [
 interface Props {
   feedReferenceId: string | null;
   onClose: () => void;
+  /** Optional breadcrumb context shown above the panel title, e.g. "Feed History" */
+  breadcrumb?: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function FeedDetail({ feedReferenceId, onClose }: Props) {
+export function FeedDetail({ feedReferenceId, onClose, breadcrumb }: Props) {
   const isOpen = feedReferenceId !== null;
   const [activeTab, setActiveTab] = useState<Tab>('timeline');
 
@@ -81,6 +83,11 @@ export function FeedDetail({ feedReferenceId, onClose }: Props) {
         {/* ── Navy header ── */}
         <div className="shrink-0 bg-[#0F2744] px-6 py-5 flex items-start justify-between">
           <div>
+            {breadcrumb && feedReferenceId && (
+              <p className="text-[11px] text-white/40 mb-1">
+                {breadcrumb} › Feed {feedReferenceId.slice(0, 8)}
+              </p>
+            )}
             <h2 className="text-base font-bold text-white mb-1">Feed Detail</h2>
             {detail ? (
               <p className="text-xs text-white/60">

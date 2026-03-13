@@ -24,12 +24,12 @@ export function KpiStrip() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <KpiCard
-        label="Runs Today"
+        label="Feeds Received Today"
         value={data.totalRuns.toLocaleString()}
         icon={<Activity className="w-4 h-4" />}
       />
       <KpiCard
-        label="Success Rate"
+        label="Successful Delivery Rate"
         value={`${data.successRate.toFixed(1)}%`}
         severity={getSuccessRateSeverity(data.successRate)}
         icon={<CheckCircle2 className="w-4 h-4" />}

@@ -21,10 +21,10 @@ export function ValidationReport({ validation: v }: ValidationReportProps) {
           : <XCircle className="w-5 h-5 text-red-400" />}
         <div>
           <p className="text-sm font-medium text-white">
-            {v.validationPassed ? 'Validation Passed' : 'Validation Failed'}
+            {v.validationPassed ? 'Data Validation Passed' : 'Data Validation Failed'}
           </p>
           {v.schemaMatchScore != null && (
-            <p className="text-xs text-gray-400">Schema match: {v.schemaMatchScore}%</p>
+            <p className="text-xs text-gray-400">Data Alignment Score: {v.schemaMatchScore}%</p>
           )}
         </div>
       </div>

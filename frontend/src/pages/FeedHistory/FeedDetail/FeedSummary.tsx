@@ -119,7 +119,7 @@ export function FeedSummary({ summary: s }: Props) {
         </Kv>
 
         {s.runType && (
-          <Kv label="Run Type">
+          <Kv label="Feed Type">
             {s.runType}
           </Kv>
         )}
