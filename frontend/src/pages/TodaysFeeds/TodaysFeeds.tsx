@@ -12,7 +12,7 @@ export default function TodaysFeeds() {
 
       {/* Page heading */}
       <div className="mb-5">
-        <h1 className="text-lg font-bold text-white mb-1">Today's Feeds</h1>
+        <h1 className="text-lg font-bold text-black mb-1">Today's Feeds</h1>
         <p className="text-sm text-gray-500">
           Live pipeline status and delivery overview for all CU partners.
         </p>

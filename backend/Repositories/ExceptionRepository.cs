@@ -26,7 +26,6 @@ public class ExceptionRepository(IConfiguration config)
         new SqlConnection(config.GetConnectionString("TruStage"));
 
     // ─── Summary ──────────────────────────────────────────────────────────────
-
     /// <summary>
     /// Returns aggregate exception counts for the Feed Exceptions KPI cards.
     /// Source: <c>kafka.DlqEvents</c>.
@@ -60,7 +59,7 @@ public class ExceptionRepository(IConfiguration config)
         const string sql = """
             SELECT
                 CAST(dlq.Id AS NVARCHAR(50))    AS ExceptionId,
-                dlq.CorrelationId               AS FeedReferenceId,
+                CAST(dlq.CorrelationId AS nvarchar(50)) AS FeedReferenceId,
                 dlq.CuId,
                 r.CU_Name                       AS CuName,
                 ISNULL(dlq.TopicName, dlq.StageName)
@@ -116,7 +115,7 @@ public class ExceptionRepository(IConfiguration config)
         const string sql = """
             SELECT
                 CAST(dlq.Id AS NVARCHAR(50))    AS ExceptionId,
-                dlq.CorrelationId               AS FeedReferenceId,
+                CAST(dlq.CorrelationId AS nvarchar(50)) AS FeedReferenceId,
                 dlq.CuId,
                 r.CU_Name                       AS CuName,
                 ISNULL(dlq.TopicName, dlq.StageName)

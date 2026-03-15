@@ -228,7 +228,7 @@ public class FeedsRepository(IConfiguration config)
 
         const string feedsSql = """
             SELECT
-                bj.CorrelationId    AS FeedReferenceId,
+                CAST(bj.CorrelationId AS nvarchar(50)) AS FeedReferenceId,
                 bj.CuId             AS CuId,
                 bj.IngestedAt       AS StartedAt,
                 bj.PublishedAt      AS DeliveredAt,
@@ -273,7 +273,7 @@ public class FeedsRepository(IConfiguration config)
     {
         const string sql = """
             SELECT
-                bj.CorrelationId    AS FeedReferenceId,
+                CAST(bj.CorrelationId AS nvarchar(50)) AS FeedReferenceId,
                 bj.CuId,
                 r.CU_Name           AS CuName,
                 bj.IngestedAt       AS FeedStarted,
@@ -293,9 +293,11 @@ public class FeedsRepository(IConfiguration config)
                     ELSE 'InProgress'
                 END                 AS Status
             FROM kafka.BatchJourneys bj
-            JOIN  cfl.CU_Registry r             ON r.CU_ID             = bj.CuId
+            JOIN  cfl.CU_Registry r             ON r.CU_ID = bj.CuId
+            LEFT JOIN audit.IngestionBatches ib  ON ib.CU_ID = bj.CuId
+                                                AND ABS(DATEDIFF(second, bj.IngestedAt, ib.StartedAt)) < 10
             LEFT JOIN audit.PipelineValidationReports pvr
-                                                ON pvr.IngestionBatchId = bj.BatchId
+                                                ON pvr.IngestionBatchId = ib.IngestionBatchId
             WHERE (@CuId   IS NULL OR bj.CuId        = @CuId)
               AND (@From   IS NULL OR bj.IngestedAt  >= @From)
               AND (@To     IS NULL OR bj.IngestedAt  <= @To)
@@ -333,7 +335,7 @@ public class FeedsRepository(IConfiguration config)
     {
         const string summarySql = """
             SELECT
-                bj.CorrelationId        AS FeedReferenceId,
+                CAST(bj.CorrelationId AS nvarchar(50)) AS FeedReferenceId,
                 bj.CuId,
                 r.CU_Name               AS CuName,
                 bj.BlobName,
@@ -348,7 +350,7 @@ public class FeedsRepository(IConfiguration config)
                     WHEN bj.FinalStatus = 'Failed'                               THEN 'Failed'
                     ELSE 'InProgress'
                 END                     AS Status,
-                ib.MappingVersion,
+                CAST(ib.MappingVersion AS nvarchar(20)) AS MappingVersion,
                 ib.RunType,
                 s.NextFeedExpectedAt,
                 CASE
@@ -363,10 +365,10 @@ public class FeedsRepository(IConfiguration config)
                     ELSE NULL
                 END                     AS OnTime
             FROM kafka.BatchJourneys bj
-            JOIN  cfl.CU_Registry r         ON r.CU_ID              = bj.CuId
-            LEFT JOIN audit.IngestionBatches ib
-                                            ON ib.IngestionBatchId   = bj.BatchId
-            LEFT JOIN adapter.CU_Schedule s ON s.CuId                = bj.CuId
+            JOIN  cfl.CU_Registry r         ON r.CU_ID = bj.CuId
+            LEFT JOIN audit.IngestionBatches ib ON ib.CU_ID = bj.CuId
+                                               AND ABS(DATEDIFF(second, bj.IngestedAt, ib.StartedAt)) < 10
+            LEFT JOIN adapter.CU_Schedule s ON s.CuId = bj.CuId
             WHERE bj.CorrelationId = @feedReferenceId;
             """;
 
@@ -405,7 +407,9 @@ public class FeedsRepository(IConfiguration config)
                 END AS DataAlignmentScore,
                 pvr.GateDetailsJson
             FROM kafka.BatchJourneys bj
-            JOIN audit.PipelineValidationReports pvr ON pvr.IngestionBatchId = bj.BatchId
+            JOIN audit.IngestionBatches ib ON ib.CU_ID = bj.CuId
+                                          AND ABS(DATEDIFF(second, bj.IngestedAt, ib.StartedAt)) < 10
+            JOIN audit.PipelineValidationReports pvr ON pvr.IngestionBatchId = ib.IngestionBatchId
             WHERE bj.CorrelationId = @feedReferenceId;
             """;
 
@@ -425,4 +429,44 @@ public class FeedsRepository(IConfiguration config)
             ValidationReport = validation
         };
     }
+
+    // ─── Step Timing Trend ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns per-feed stage durations for the Step Timing stacked-area chart on the CU Detail page.
+    /// Sources: <c>kafka.PipelineStageTimings</c> JOIN <c>kafka.BatchJourneys</c>.
+    /// Last 30 feeds, pivoted so each row = one feed date + five stage durations.
+    /// </summary>
+    public async Task<IEnumerable<StepTimingPointDto>> GetCuStepTimingTrendAsync(string cuId)
+    {
+        const string sql = """
+            SELECT TOP 30
+                CONVERT(nvarchar(10), bj.IngestedAt, 23) AS Date,
+                MAX(CASE WHEN pst.StageName = 'Ingestion'        THEN pst.DurationMs END) AS ReceiveCuFileMs,
+                MAX(CASE WHEN pst.StageName = 'SchemaValidation' THEN pst.DurationMs END) AS DataValidationMs,
+                MAX(CASE WHEN pst.StageName = 'Transform'        THEN pst.DurationMs END) AS ApplyStandardisationMs,
+                MAX(CASE WHEN pst.StageName = 'RulesValidation'  THEN pst.DurationMs END) AS StandardiseTransformMs,
+                MAX(CASE WHEN pst.StageName = 'Publishing'       THEN pst.DurationMs END) AS WriteToStandardMs
+            FROM kafka.BatchJourneys bj
+            JOIN kafka.PipelineStageTimings pst ON pst.CorrelationId = bj.CorrelationId
+            WHERE bj.CuId = @cuId
+            GROUP BY bj.CorrelationId, CONVERT(nvarchar(10), bj.IngestedAt, 23)
+            ORDER BY CONVERT(nvarchar(10), bj.IngestedAt, 23) ASC;
+            """;
+
+        using var db = Connect();
+        return await db.QueryAsync<StepTimingPointDto>(sql, new { cuId });
+    }
+}
+
+// ─── Step Timing DTO ──────────────────────────────────────────────────────────
+
+public class StepTimingPointDto
+{
+    public string Date                  { get; set; } = "";
+    public long?  ReceiveCuFileMs       { get; set; }
+    public long?  DataValidationMs      { get; set; }
+    public long?  ApplyStandardisationMs { get; set; }
+    public long?  StandardiseTransformMs { get; set; }
+    public long?  WriteToStandardMs     { get; set; }
 }

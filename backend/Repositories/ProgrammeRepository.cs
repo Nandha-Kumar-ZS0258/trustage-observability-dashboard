@@ -129,7 +129,7 @@ public class ProgrammeRepository(IConfiguration config)
                         ELSE 'BAU'
                     END AS LifecycleState,
 
-                    lf.CorrelationId        AS LastFeedCorrelationId,
+                    CAST(lf.CorrelationId AS nvarchar(50)) AS LastFeedCorrelationId,
                     lf.PublishedAt          AS LastFeedDeliveredAt,
                     lf.TotalDurationMs      AS LastFeedDurationMs,
                     lf.RecordsOut           AS LastFeedMemberRecords,
@@ -176,6 +176,41 @@ public class ProgrammeRepository(IConfiguration config)
             filters.HealthStatus,
             filters.Platform
         });
+    }
+
+    // ─── Save Note / Owner ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Persists a lifecycle panel note and optionally updates the assigned engineer.
+    /// Inserts into <c>ops.CU_Notes</c> when note text is provided,
+    /// and updates <c>cfl.CU_Registry.AssignedEngineer</c> when an owner is provided.
+    /// Both writes run in a single transaction.
+    /// Requires Migration 004 (ops.CU_Notes).
+    /// </summary>
+    public async Task SaveCuNoteAsync(LifecyclePanelNoteRequest req)
+    {
+        using var db = Connect();
+        db.Open();
+        using var tx = db.BeginTransaction();
+
+        if (!string.IsNullOrWhiteSpace(req.Note))
+        {
+            await db.ExecuteAsync("""
+                INSERT INTO ops.CU_Notes (CuId, NoteText, AuthorId)
+                VALUES (@CuId, @Note, @OwnerId)
+                """, req, tx);
+        }
+
+        if (!string.IsNullOrWhiteSpace(req.OwnerId))
+        {
+            await db.ExecuteAsync("""
+                UPDATE cfl.CU_Registry
+                SET AssignedEngineer = @OwnerId
+                WHERE CU_ID = @CuId
+                """, req, tx);
+        }
+
+        tx.Commit();
     }
 
     // ─── Lifecycle Panel ──────────────────────────────────────────────────────

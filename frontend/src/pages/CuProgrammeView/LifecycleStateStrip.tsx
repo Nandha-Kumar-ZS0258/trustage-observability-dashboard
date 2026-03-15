@@ -87,7 +87,7 @@ export function LifecycleStateStrip({ onStateClick }: Props) {
           sub2Amber={overdueReady > 0}
           accentClass="border-t-amber-500"
           valueClass="text-amber-400"
-          onClick={() => onStateClick('Ready for First Feed')}
+          onClick={() => onStateClick('ReadyForFirstFeed')}
         />
 
         <StatCard

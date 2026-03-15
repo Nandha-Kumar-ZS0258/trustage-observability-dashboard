@@ -34,6 +34,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var app = builder.Build();
 
+// Expose exception details so we can diagnose 500s
+app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
+{
+    var ex = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+    ctx.Response.StatusCode = 500;
+    ctx.Response.ContentType = "text/plain";
+    await ctx.Response.WriteAsync(ex?.ToString() ?? "Unknown error");
+}));
+
 app.UseCors();
 
 app.MapOverviewEndpoints();
@@ -46,6 +55,7 @@ app.MapCuSetupEndpoints();
 
 app.MapProgrammeEndpoints();
 app.MapFeedsEndpoints();
+app.MapCuKafkaEndpoints();
 app.MapHistoryEndpoints();
 app.MapExceptionEndpoints();
 app.MapDemoEndpoints();

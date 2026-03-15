@@ -15,12 +15,12 @@ const BAU_STALE_DAYS   = 3;
 function LifecyclePill({ state }: { state: LifecycleState }) {
   const cls =
     state === 'Onboarding'          ? 'badge bg-blue-500/15 text-blue-400'  :
-    state === 'Ready for First Feed' ? 'badge bg-amber-500/15 text-amber-400' :
+    state === 'ReadyForFirstFeed' ? 'badge bg-amber-500/15 text-amber-400' :
                                        'badge bg-emerald-500/15 text-emerald-400';
   const label =
-    state === 'Onboarding'           ? 'Onboarding'    :
-    state === 'Ready for First Feed'  ? 'Ready'          :
-                                        'BAU';
+    state === 'Onboarding'        ? 'Onboarding' :
+    state === 'ReadyForFirstFeed' ? 'Ready'       :
+                                    'BAU';
   return <span className={cls}>{label}</span>;
 }
 
@@ -89,7 +89,7 @@ function fmtDuration(ms: number | null | undefined) {
 
 function DaysCell({ row }: { row: CuFleetRow }) {
   const isStale =
-    (row.lifecycleState === 'Ready for First Feed' && row.daysInState > READY_STALE_DAYS) ||
+    (row.lifecycleState === 'ReadyForFirstFeed' && row.daysInState > READY_STALE_DAYS) ||
     (row.lifecycleState === 'BAU'                  && row.daysInState > BAU_STALE_DAYS);
 
   if (!isStale) return <span className="text-gray-300">{row.daysInState}</span>;
@@ -140,7 +140,12 @@ interface Filters {
 }
 
 const PLATFORM_OPTIONS = ['Symitar', 'Corelation', 'Fiserv', 'DNA'];
-const LIFECYCLE_OPTIONS: LifecycleState[] = ['Onboarding', 'Ready for First Feed', 'BAU'];
+const LIFECYCLE_OPTIONS: LifecycleState[] = ['Onboarding', 'ReadyForFirstFeed', 'BAU'];
+const LIFECYCLE_LABELS: Record<LifecycleState, string> = {
+  Onboarding: 'Onboarding',
+  ReadyForFirstFeed: 'Ready for First Feed',
+  BAU: 'BAU',
+};
 const HEALTH_OPTIONS: HealthStatus[] = ['Healthy', 'Overdue', 'Failed', 'Awaiting'];
 
 function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filters) => void }) {
@@ -156,7 +161,7 @@ function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filt
       />
       <select className="select text-sm py-1.5" value={filters.state} onChange={e => set({ state: e.target.value })}>
         <option value="">All Lifecycle States</option>
-        {LIFECYCLE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+        {LIFECYCLE_OPTIONS.map(s => <option key={s} value={s}>{LIFECYCLE_LABELS[s]}</option>)}
       </select>
       <select className="select text-sm py-1.5" value={filters.platform} onChange={e => set({ platform: e.target.value })}>
         <option value="">All Platforms</option>

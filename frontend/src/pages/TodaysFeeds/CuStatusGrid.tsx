@@ -122,7 +122,7 @@ export function CuStatusGrid() {
 
   // Separate BAU from Ready for First Feed; skip Onboarding from this grid
   const bau     = rows.filter(r => r.lifecycleState === 'BAU');
-  const ready   = rows.filter(r => r.lifecycleState === 'Ready for First Feed');
+  const ready   = rows.filter(r => r.lifecycleState === 'ReadyForFirstFeed');
 
   if (isLoading) {
     return <p className="text-sm text-gray-500 py-8 text-center">Loading CU Partner status…</p>;

@@ -24,7 +24,7 @@ export default function FeedHistory() {
     <div className="p-6">
       {/* Page heading */}
       <div className="mb-5">
-        <h1 className="text-lg font-bold text-white mb-1">Feed History</h1>
+        <h1 className="text-lg font-bold text-black mb-1">Feed History</h1>
         <p className="text-sm text-gray-500">
           Full history of all data feeds processed across CU partners.
         </p>

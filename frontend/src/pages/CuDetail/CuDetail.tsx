@@ -28,7 +28,7 @@ function lifecyclePillClasses(state: LifecycleState): string {
   switch (state) {
     case 'BAU':                 return 'bg-green-900/40 text-green-400 border border-green-700/40';
     case 'Onboarding':          return 'bg-blue-900/40 text-blue-400 border border-blue-700/40';
-    case 'Ready for First Feed': return 'bg-amber-900/40 text-amber-400 border border-amber-700/40';
+    case 'ReadyForFirstFeed': return 'bg-amber-900/40 text-amber-400 border border-amber-700/40';
   }
 }
 

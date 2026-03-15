@@ -43,9 +43,14 @@ public static class ProgrammeEndpoints
         });
 
         // POST /api/programme/lifecycle-panel/note
-        // Accepts a free-text note (and optional owner) for a CU in a lifecycle panel.
-        // Stub: returns 200 immediately. Full persistence requires a future notes table migration.
-        group.MapPost("/lifecycle-panel/note", (LifecyclePanelNoteRequest req) =>
-            Results.Ok(new { saved = true }));
+        // Persists the note into ops.CU_Notes and updates AssignedEngineer on cfl.CU_Registry.
+        // Requires Migration 004 (ops.CU_Notes table).
+        group.MapPost("/lifecycle-panel/note", async (
+            ProgrammeRepository repo,
+            LifecyclePanelNoteRequest req) =>
+        {
+            await repo.SaveCuNoteAsync(req);
+            return Results.Ok(new { saved = true });
+        });
     }
 }

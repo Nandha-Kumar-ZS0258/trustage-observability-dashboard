@@ -24,7 +24,7 @@ const PANEL_META: Record<LifecycleState, { icon: string; title: string; subFn: (
     title: 'Onboarding',
     subFn: count => `CU connectors currently in development — ${count} total`,
   },
-  'Ready for First Feed': {
+  ReadyForFirstFeed: {
     icon: '🟡',
     title: 'Ready for First Feed',
     subFn: count => `Connectors deployed to production — awaiting first delivery — ${count} total`,
@@ -39,14 +39,14 @@ const PANEL_META: Record<LifecycleState, { icon: string; title: string; subFn: (
 
 const DAYS_COL: Record<LifecycleState, string> = {
   Onboarding: 'Days',
-  'Ready for First Feed': 'Days Waiting',
+  ReadyForFirstFeed: 'Days Waiting',
   BAU: 'Days in BAU',
 };
 
 // ── Staleness banner text per state ─────────────────────────────────────────
 
 function getStaleBannerText(state: LifecycleState, staleCount: number, cus: CuConfiguration[]): string | null {
-  if (state === 'Ready for First Feed') {
+  if (state === 'ReadyForFirstFeed') {
     const n = cus.filter(cu => cu.daysInState > READY_STALE_DAYS).length;
     if (n === 0) return null;
     return `${n} CU partner${n > 1 ? 's' : ''} ${n > 1 ? 'have' : 'has'} been waiting more than 7 days`;
@@ -100,7 +100,7 @@ function PanelRow({ cu, state, isStale }: RowProps) {
         >
           {cu.cuName}
         </button>
-        {isStale && state === 'Ready for First Feed' && (
+        {isStale && state === 'ReadyForFirstFeed' && (
           <span className="ml-2 badge bg-amber-500/15 text-amber-400 text-[10px]">
             Waiting ⚠
           </span>
@@ -283,7 +283,7 @@ export function LifecyclePanel({ state, staleCount, onClose }: Props) {
                 <tbody>
                   {cus.map(cu => {
                     const isStale =
-                      state === 'Ready for First Feed'
+                      state === 'ReadyForFirstFeed'
                         ? cu.daysInState > READY_STALE_DAYS
                         : false; // BAU staleness is count-level only (no per-CU lastFeedDate here)
                     return (

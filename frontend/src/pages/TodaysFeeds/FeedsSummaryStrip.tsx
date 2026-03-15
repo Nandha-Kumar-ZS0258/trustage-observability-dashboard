@@ -86,7 +86,7 @@ export function FeedsSummaryStrip() {
       {/* Successful Delivery Rate — threshold coloured */}
       <StatCard
         label="Successful Delivery Rate"
-        value={isLoading ? '…' : `${successRate}%`}
+        value={isLoading ? '…' : `${successRate.toFixed(2)}%`}
         sub={
           !isLoading && data
             ? `${Math.round((successRate / 100) * feedsToday)} of ${feedsToday} feeds delivered clean`
