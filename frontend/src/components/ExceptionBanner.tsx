@@ -59,20 +59,20 @@ export function ExceptionBanner() {
   return (
     <div
       className="flex items-center gap-3 rounded-lg px-4 py-2.5 mb-5 text-sm
-                 bg-red-950/50 border border-red-900/50 border-l-4 border-l-red-500"
+                 bg-[#FEF2F2] border border-[#FECACA] border-l-4 border-l-[#DC2626]"
       role="alert"
     >
       {/* Icon */}
       <span className="shrink-0 text-base" aria-hidden="true">🔴</span>
 
       {/* Message */}
-      <span className="flex-1 text-red-300 font-medium">
+      <span className="flex-1 text-[#991B1B] font-medium">
         {count} active feed {exceptionLabel} {cuPart}{timePart}
       </span>
 
       {/* Navigate link */}
       <button
-        className="shrink-0 text-red-400 hover:text-red-200 font-semibold transition-colors whitespace-nowrap"
+        className="shrink-0 text-[#DC2626] hover:text-[#991B1B] font-semibold transition-colors whitespace-nowrap"
         onClick={() => navigate('/exceptions')}
       >
         View Exceptions →
@@ -80,7 +80,7 @@ export function ExceptionBanner() {
 
       {/* Dismiss */}
       <button
-        className="shrink-0 text-red-700 hover:text-red-400 transition-colors ml-1"
+        className="shrink-0 text-[#FECACA] hover:text-[#DC2626] transition-colors ml-1"
         onClick={() => setDismissed(true)}
         aria-label="Dismiss banner"
       >

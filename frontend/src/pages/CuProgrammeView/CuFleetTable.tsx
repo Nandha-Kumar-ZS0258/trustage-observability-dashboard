@@ -14,27 +14,27 @@ const BAU_STALE_DAYS   = 3;
 
 function LifecyclePill({ state }: { state: LifecycleState }) {
   const cls =
-    state === 'Onboarding'          ? 'badge bg-blue-500/15 text-blue-400'  :
-    state === 'ReadyForFirstFeed' ? 'badge bg-amber-500/15 text-amber-400' :
-                                       'badge bg-emerald-500/15 text-emerald-400';
+    state === 'Onboarding'      ? 'badge bg-[#DBEAFE] text-[#1D4ED8]'  :
+    state === 'ReadyForFirstFeed' ? 'badge bg-[#FEF3C7] text-[#92400E]' :
+                                    'badge bg-[#DCFCE7] text-[#166534]';
   const label =
-    state === 'Onboarding'        ? 'Onboarding' :
-    state === 'ReadyForFirstFeed' ? 'Ready'       :
-                                    'BAU';
+    state === 'Onboarding'        ? '● Onboarding' :
+    state === 'ReadyForFirstFeed' ? '● Ready'       :
+                                    '● BAU';
   return <span className={cls}>{label}</span>;
 }
 
 function HealthPill({ status }: { status: HealthStatus }) {
   const cls =
-    status === 'Healthy'  ? 'badge bg-emerald-500/15 text-emerald-400' :
-    status === 'Overdue'  ? 'badge bg-amber-500/15 text-amber-400'     :
-    status === 'Failed'   ? 'badge bg-red-500/15 text-red-400'         :
-                            'badge bg-gray-700/60 text-gray-400';
-  return <span className={cls}>{status}</span>;
+    status === 'Healthy'  ? 'badge bg-[#DCFCE7] text-[#166534]' :
+    status === 'Overdue'  ? 'badge bg-[#FEF3C7] text-[#92400E]' :
+    status === 'Failed'   ? 'badge bg-[#FEE2E2] text-[#991B1B]' :
+                            'badge bg-[#F1F5F9] text-[#475569]';
+  return <span className={cls}>{status === 'Dev' ? '⚫ Dev' : `● ${status}`}</span>;
 }
 
 function OwnerBadge({ name }: { name: string | null }) {
-  if (!name) return <span className="text-gray-600 text-xs">—</span>;
+  if (!name) return <span className="text-[#94A3B8] text-xs">—</span>;
   const initials = name
     .split(' ')
     .map(p => p[0])
@@ -43,7 +43,7 @@ function OwnerBadge({ name }: { name: string | null }) {
     .toUpperCase();
   return (
     <span
-      className="badge bg-gray-700/70 text-gray-300 text-[10px] font-semibold"
+      className="badge bg-[#F1F5F9] text-[#475569] text-[10px] font-semibold"
       title={name}
     >
       {initials}
@@ -76,13 +76,13 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
 // ── Date / duration helpers ───────────────────────────────────────────────────
 
 function fmtDate(iso: string | null, fallback = 'Not yet') {
-  if (!iso) return <span className="text-gray-600">{fallback}</span>;
-  return <span>{format(parseISO(iso), 'dd MMM, HH:mm')}</span>;
+  if (!iso) return <span className="text-[#94A3B8]">{fallback}</span>;
+  return <span className="text-[#334155]">{format(parseISO(iso), 'dd MMM, HH:mm')}</span>;
 }
 
 function fmtDuration(ms: number | null | undefined) {
-  if (ms == null) return <span className="text-gray-600">—</span>;
-  return <span>{(ms / 1000).toFixed(1)}s</span>;
+  if (ms == null) return <span className="text-[#94A3B8]">—</span>;
+  return <span className="text-[#334155]">{(ms / 1000).toFixed(1)}s</span>;
 }
 
 // ── Days-in-state cell ────────────────────────────────────────────────────────
@@ -92,11 +92,14 @@ function DaysCell({ row }: { row: CuFleetRow }) {
     (row.lifecycleState === 'ReadyForFirstFeed' && row.daysInState > READY_STALE_DAYS) ||
     (row.lifecycleState === 'BAU'                  && row.daysInState > BAU_STALE_DAYS);
 
-  if (!isStale) return <span className="text-gray-300">{row.daysInState}</span>;
+  if (!isStale) return <span className="text-[#334155]">{row.daysInState} days</span>;
 
   return (
-    <span className="badge bg-amber-500/15 text-amber-400 text-[10px] font-semibold whitespace-nowrap">
-      {row.daysInState} days ⚠
+    <span className="text-[#334155] text-sm">
+      {row.daysInState} days{' '}
+      <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] ml-1">
+        Overdue ⚠
+      </span>
     </span>
   );
 }
@@ -146,12 +149,12 @@ const LIFECYCLE_LABELS: Record<LifecycleState, string> = {
   ReadyForFirstFeed: 'Ready for First Feed',
   BAU: 'BAU',
 };
-const HEALTH_OPTIONS: HealthStatus[] = ['Healthy', 'Overdue', 'Failed', 'Awaiting'];
+const HEALTH_OPTIONS: HealthStatus[] = ['Healthy', 'Overdue', 'Failed', 'Awaiting', 'Dev'];
 
 function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filters) => void }) {
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
   return (
-    <div className="flex flex-wrap gap-3 mb-4">
+    <div className="flex flex-wrap gap-3">
       <input
         type="search"
         className="input text-sm py-1.5 w-52"
@@ -218,9 +221,12 @@ export function CuFleetTable() {
 
   return (
     <div>
-      <FilterBar filters={filters} onChange={setFilters} />
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 className="text-sm font-bold text-[#0F2744]">CU Partner Fleet</h3>
+        <FilterBar filters={filters} onChange={setFilters} />
+      </div>
 
-      <div className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden">
+      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -231,9 +237,8 @@ export function CuFleetTable() {
                 <Th label="Days in State"          colKey="daysInState"             {...thProps} />
                 <Th label="Last Feed Delivered"    colKey="lastFeedDeliveredAt"     {...thProps} />
                 <Th label="Next Feed Expected"     colKey="nextFeedExpectedAt"      {...thProps} />
-                <Th label="Last Feed Duration"     colKey="lastFeedDurationMs"      {...thProps} />
-                <Th label="Member Records (last)"  colKey="lastFeedMemberRecords"   {...thProps} />
-                <Th label="Records Rejected (last)" colKey="lastFeedRecordsRejected" {...thProps} />
+                <Th label="Duration (last)"        colKey="lastFeedDurationMs"      {...thProps} />
+                <Th label="Records (last)"         colKey="lastFeedMemberRecords"   {...thProps} />
                 <Th label="Health"                 colKey="healthStatus"            {...thProps} />
                 <Th label="Owner"                  colKey="assignedEngineer"        {...thProps} />
               </tr>
@@ -241,13 +246,13 @@ export function CuFleetTable() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={11} className="px-4 py-10 text-center text-gray-500 text-sm">
+                  <td colSpan={10} className="px-4 py-10 text-center text-[#94A3B8] text-sm">
                     Loading…
                   </td>
                 </tr>
               ) : displayed.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-4 py-10 text-center text-gray-500 text-sm">
+                  <td colSpan={10} className="px-4 py-10 text-center text-[#94A3B8] text-sm">
                     No CU partners match the current filters.
                   </td>
                 </tr>
@@ -256,14 +261,14 @@ export function CuFleetTable() {
                   <tr
                     key={row.cuId}
                     className={clsx(
-                      'border-b border-gray-800 transition-colors hover:bg-gray-800/40',
-                      i % 2 === 1 && 'bg-gray-900/30',
+                      'border-b border-[#E2E8F0] transition-colors hover:bg-[#EFF6FF] cursor-pointer',
+                      i % 2 === 1 && 'bg-[#F8FAFC]',
                     )}
                   >
                     {/* CU Partner Name */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <button
-                        className="text-blue-400 hover:text-blue-300 font-semibold text-sm text-left"
+                        className="text-[#1A6DB5] hover:text-[#0F2744] font-semibold text-sm text-left"
                         onClick={() => navigate(`/cu/${row.cuId}`)}
                       >
                         {row.cuName}
@@ -271,7 +276,7 @@ export function CuFleetTable() {
                     </td>
 
                     {/* Core Banking Platform */}
-                    <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">
+                    <td className="px-4 py-3 text-[#475569] text-sm whitespace-nowrap">
                       {row.coreBankingPlatform}
                     </td>
 
@@ -286,36 +291,25 @@ export function CuFleetTable() {
                     </td>
 
                     {/* Last Feed Delivered */}
-                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap text-sm">
+                    <td className="px-4 py-3 text-[#334155] whitespace-nowrap text-sm">
                       {fmtDate(row.lastFeedDeliveredAt, 'Not yet')}
                     </td>
 
                     {/* Next Feed Expected */}
-                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap text-sm">
+                    <td className="px-4 py-3 text-[#334155] whitespace-nowrap text-sm">
                       {fmtDate(row.nextFeedExpectedAt, 'Not scheduled')}
                     </td>
 
                     {/* Last Feed Duration */}
-                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap text-sm">
+                    <td className="px-4 py-3 text-[#334155] whitespace-nowrap text-sm">
                       {fmtDuration(row.lastFeedDurationMs)}
                     </td>
 
-                    {/* Member Records (last) */}
-                    <td className="px-4 py-3 text-gray-300 text-sm tabular-nums">
+                    {/* Records (last) */}
+                    <td className="px-4 py-3 text-[#334155] text-sm tabular-nums">
                       {row.lastFeedMemberRecords !== null
                         ? row.lastFeedMemberRecords.toLocaleString()
-                        : <span className="text-gray-600">—</span>}
-                    </td>
-
-                    {/* Records Rejected (last) */}
-                    <td className="px-4 py-3 text-sm tabular-nums">
-                      {row.lastFeedRecordsRejected !== null ? (
-                        <span className={row.lastFeedRecordsRejected > 0 ? 'text-red-400 font-semibold' : 'text-gray-300'}>
-                          {row.lastFeedRecordsRejected.toLocaleString()}
-                        </span>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
+                        : <span className="text-[#94A3B8]">—</span>}
                     </td>
 
                     {/* Health */}
@@ -336,8 +330,8 @@ export function CuFleetTable() {
 
         {/* Row count footer */}
         {!isLoading && (
-          <div className="px-4 py-2.5 border-t border-gray-800 bg-gray-900/50">
-            <p className="text-[11px] text-gray-600">
+          <div className="px-4 py-2.5 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+            <p className="text-[11px] text-[#94A3B8]">
               {displayed.length} CU partner{displayed.length !== 1 ? 's' : ''}
               {displayed.length !== rows.length && ` (filtered from ${rows.length})`}
             </p>

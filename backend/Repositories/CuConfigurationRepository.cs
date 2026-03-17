@@ -16,11 +16,11 @@ public class CuConfigurationRepository(IConfiguration config)
     {
         const string sql = """
             SELECT
-                COUNT(*)                                                            AS TotalCus,
-                SUM(CASE WHEN onboardingStatus = 'active'     THEN 1 ELSE 0 END)  AS ActiveCount,
-                SUM(CASE WHEN onboardingStatus = 'onboarding' THEN 1 ELSE 0 END)  AS OnboardingCount,
-                SUM(CASE WHEN onboardingStatus = 'inactive'   THEN 1 ELSE 0 END)  AS InactiveCount
-            FROM observability.CuConfiguration;
+                COUNT(*)                                                                    AS TotalCus,
+                SUM(CASE WHEN OnboardingStatus = 'Active'     THEN 1 ELSE 0 END)          AS ActiveCount,
+                SUM(CASE WHEN OnboardingStatus = 'Onboarding' THEN 1 ELSE 0 END)          AS OnboardingCount,
+                0                                                                           AS InactiveCount
+            FROM cfl.CU_Registry;
             """;
 
         using var db = Connect();
@@ -32,44 +32,52 @@ public class CuConfigurationRepository(IConfiguration config)
     public async Task<IEnumerable<CuConfigurationDto>> GetDirectoryAsync(CuDirectoryFilters f)
     {
         const string sql = """
+            WITH LatestObserved AS (
+                SELECT
+                    CuId,
+                    MAX(AdapterId)                                                                  AS ObservedAdapterId,
+                    MAX(CASE WHEN EventType = 'BlobReceived'
+                        THEN JSON_VALUE(BlobContext,'$.containerName') END)                        AS ObservedContainerName,
+                    MAX(CASE WHEN EventType = 'IngestionCompleted'
+                        THEN JSON_VALUE(PipelineMetrics,'$.mappingVersion') END)                   AS ObservedMappingVersion,
+                    MAX(CASE WHEN EventType = 'IngestionCompleted'
+                        THEN JSON_VALUE(BusinessContext,'$.slaThresholdMs') END)                   AS ObservedSlaThresholdMs,
+                    MAX(CASE WHEN EventType = 'IngestionCompleted'
+                        THEN JSON_VALUE(HostContext,'$.environment') END)                          AS ObservedEnvironment,
+                    STRING_AGG(CASE WHEN EventType = 'IngestionCompleted'
+                        AND JSON_VALUE(BusinessContext,'$.fileType') IS NOT NULL
+                        THEN JSON_VALUE(BusinessContext,'$.fileType') END, ', ')                   AS ObservedFileTypes,
+                    MIN(Timestamp)                                                                  AS FirstRunAt
+                FROM telemetry.AdapterEvents
+                GROUP BY CuId
+            )
             SELECT
-                cc.cuId,
-                cc.displayName,
-                cc.adapterId,
-                cc.containerName,
-                cc.fileTypes,
-                cc.slaThresholdMs,
-                cc.mappingVersion,
-                cc.environment,
-                CAST(cc.onboardingDate AS DATE)  AS onboardingDate,
-                cc.onboardingStatus,
-                cc.ownerTeam,
-                cc.notes,
-                MIN(ie.timestamp)                AS firstRunAt,
+                r.CU_ID                                         AS CuId,
+                r.CU_Name                                       AS DisplayName,
+                ISNULL(lo.ObservedAdapterId, '')                AS AdapterId,
+                ISNULL(lo.ObservedContainerName, '')            AS ContainerName,
+                lo.ObservedFileTypes                            AS FileTypes,
+                ISNULL(CAST(lo.ObservedSlaThresholdMs AS INT), 0) AS SlaThresholdMs,
+                CAST(r.ActiveMappingVersion AS NVARCHAR)        AS MappingVersion,
+                ISNULL(lo.ObservedEnvironment, '')              AS Environment,
+                CAST(r.CreatedAt AS DATE)                       AS OnboardingDate,
+                r.OnboardingStatus,
+                r.AssignedEngineer                              AS OwnerTeam,
+                NULL                                            AS Notes,
+                lo.FirstRunAt,
                 CASE
-                    WHEN
-                        MAX(CASE WHEN ie.adapterId    <> cc.adapterId    THEN 1 ELSE 0 END) = 1
-                        OR MAX(CASE WHEN pm.mappingVersion IS NOT NULL
-                                         AND pm.mappingVersion <> cc.mappingVersion THEN 1 ELSE 0 END) = 1
-                        OR MAX(CASE WHEN bc.containerName IS NOT NULL
-                                         AND bc.containerName <> cc.containerName THEN 1 ELSE 0 END) = 1
+                    WHEN lo.ObservedMappingVersion IS NOT NULL
+                         AND lo.ObservedMappingVersion <> CAST(r.ActiveMappingVersion AS NVARCHAR)
                     THEN CAST(1 AS BIT)
                     ELSE CAST(0 AS BIT)
-                END AS hasDrift
-            FROM observability.CuConfiguration cc
-            LEFT JOIN observability.IngestionEvents  ie ON ie.cuId          = cc.cuId
-            LEFT JOIN observability.PipelineMetrics  pm ON pm.correlationId = ie.correlationId
-            LEFT JOIN observability.BlobContext      bc ON bc.correlationId = ie.correlationId
-            WHERE (@Status      IS NULL OR cc.onboardingStatus = @Status)
-              AND (@Environment IS NULL OR cc.environment      = @Environment)
-              AND (@OwnerTeam   IS NULL OR cc.ownerTeam        = @OwnerTeam)
-              AND (@AdapterId   IS NULL OR cc.adapterId        = @AdapterId)
-            GROUP BY
-                cc.cuId, cc.displayName, cc.adapterId, cc.containerName,
-                cc.fileTypes, cc.slaThresholdMs, cc.mappingVersion,
-                cc.environment, cc.onboardingDate, cc.onboardingStatus,
-                cc.ownerTeam, cc.notes
-            ORDER BY cc.displayName;
+                END                                             AS HasDrift
+            FROM cfl.CU_Registry r
+            LEFT JOIN LatestObserved lo ON lo.CuId = r.CU_ID
+            WHERE (@Status      IS NULL OR r.OnboardingStatus      = @Status)
+              AND (@Environment IS NULL OR lo.ObservedEnvironment  = @Environment)
+              AND (@OwnerTeam   IS NULL OR r.AssignedEngineer      = @OwnerTeam)
+              AND (@AdapterId   IS NULL OR lo.ObservedAdapterId    = @AdapterId)
+            ORDER BY r.CU_Name;
             """;
 
         using var db = Connect();
@@ -87,84 +95,71 @@ public class CuConfigurationRepository(IConfiguration config)
     public async Task<IEnumerable<CuDriftRowDto>> GetDriftAsync(string? cuId = null)
     {
         const string sql = """
-            WITH LatestEvents AS (
+            WITH LatestObserved AS (
                 SELECT
-                    ie.cuId,
-                    MAX(ie.adapterId)           AS observedAdapterId,
-                    MAX(pm.mappingVersion)       AS observedMappingVersion,
-                    MAX(bc.containerName)        AS observedContainerName,
-                    MAX(bc_sla.slaThresholdMs)   AS observedSlaThresholdMs,
-                    STRING_AGG(DISTINCT biz.fileType, ', ')
-                        WITHIN GROUP (ORDER BY biz.fileType) AS observedFileTypes
-                FROM observability.IngestionEvents ie
-                LEFT JOIN observability.PipelineMetrics pm  ON pm.correlationId  = ie.correlationId
-                LEFT JOIN observability.BlobContext     bc  ON bc.correlationId  = ie.correlationId
-                LEFT JOIN observability.BusinessContext biz ON biz.correlationId = ie.correlationId
-                LEFT JOIN observability.BusinessContext bc_sla ON bc_sla.correlationId = ie.correlationId
-                WHERE (@CuId IS NULL OR ie.cuId = @CuId)
-                GROUP BY ie.cuId
+                    CuId,
+                    MAX(AdapterId)                                                                  AS ObservedAdapterId,
+                    MAX(CASE WHEN EventType = 'BlobReceived'
+                        THEN JSON_VALUE(BlobContext,'$.containerName') END)                        AS ObservedContainerName,
+                    MAX(CASE WHEN EventType = 'IngestionCompleted'
+                        THEN JSON_VALUE(PipelineMetrics,'$.mappingVersion') END)                   AS ObservedMappingVersion,
+                    MAX(CASE WHEN EventType = 'IngestionCompleted'
+                        THEN JSON_VALUE(BusinessContext,'$.slaThresholdMs') END)                   AS ObservedSlaThresholdMs,
+                    STRING_AGG(CASE WHEN EventType = 'IngestionCompleted'
+                        AND JSON_VALUE(BusinessContext,'$.fileType') IS NOT NULL
+                        THEN JSON_VALUE(BusinessContext,'$.fileType') END, ', ')                   AS ObservedFileTypes
+                FROM telemetry.AdapterEvents
+                WHERE (@CuId IS NULL OR CuId = @CuId)
+                GROUP BY CuId
             ),
             DriftRows AS (
-                SELECT cc.cuId, cc.displayName,
-                       'adapterId'       AS Field,
-                       cc.adapterId      AS Configured,
-                       le.observedAdapterId AS Observed,
-                       CASE WHEN le.observedAdapterId IS NOT NULL
-                                 AND le.observedAdapterId <> cc.adapterId THEN CAST(1 AS BIT)
-                            ELSE CAST(0 AS BIT) END AS IsDrift
-                FROM observability.CuConfiguration cc
-                LEFT JOIN LatestEvents le ON le.cuId = cc.cuId
+                -- mappingVersion: registry is the configured baseline
+                SELECT r.CU_ID AS CuId, r.CU_Name AS DisplayName,
+                       'mappingVersion'                      AS Field,
+                       CAST(r.ActiveMappingVersion AS NVARCHAR) AS Configured,
+                       lo.ObservedMappingVersion             AS Observed,
+                       CASE WHEN lo.ObservedMappingVersion IS NOT NULL
+                                 AND lo.ObservedMappingVersion <> CAST(r.ActiveMappingVersion AS NVARCHAR)
+                            THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsDrift
+                FROM cfl.CU_Registry r
+                LEFT JOIN LatestObserved lo ON lo.CuId = r.CU_ID
 
                 UNION ALL
 
-                SELECT cc.cuId, cc.displayName,
-                       'mappingVersion',
-                       ISNULL(cc.mappingVersion, '(not set)'),
-                       le.observedMappingVersion,
-                       CASE WHEN le.observedMappingVersion IS NOT NULL
-                                 AND le.observedMappingVersion <> ISNULL(cc.mappingVersion, '') THEN CAST(1 AS BIT)
-                            ELSE CAST(0 AS BIT) END
-                FROM observability.CuConfiguration cc
-                LEFT JOIN LatestEvents le ON le.cuId = cc.cuId
+                -- adapterId: observed only, no configured baseline in registry
+                SELECT r.CU_ID, r.CU_Name,
+                       'adapterId', NULL, lo.ObservedAdapterId, CAST(0 AS BIT)
+                FROM cfl.CU_Registry r
+                LEFT JOIN LatestObserved lo ON lo.CuId = r.CU_ID
 
                 UNION ALL
 
-                SELECT cc.cuId, cc.displayName,
-                       'containerName',
-                       cc.containerName,
-                       le.observedContainerName,
-                       CASE WHEN le.observedContainerName IS NOT NULL
-                                 AND le.observedContainerName <> cc.containerName THEN CAST(1 AS BIT)
-                            ELSE CAST(0 AS BIT) END
-                FROM observability.CuConfiguration cc
-                LEFT JOIN LatestEvents le ON le.cuId = cc.cuId
+                -- containerName: observed only
+                SELECT r.CU_ID, r.CU_Name,
+                       'containerName', NULL, lo.ObservedContainerName, CAST(0 AS BIT)
+                FROM cfl.CU_Registry r
+                LEFT JOIN LatestObserved lo ON lo.CuId = r.CU_ID
 
                 UNION ALL
 
-                SELECT cc.cuId, cc.displayName,
-                       'slaThresholdMs',
-                       CAST(cc.slaThresholdMs AS NVARCHAR),
-                       CAST(le.observedSlaThresholdMs AS NVARCHAR),
-                       CASE WHEN le.observedSlaThresholdMs IS NOT NULL
-                                 AND le.observedSlaThresholdMs <> cc.slaThresholdMs THEN CAST(1 AS BIT)
-                            ELSE CAST(0 AS BIT) END
-                FROM observability.CuConfiguration cc
-                LEFT JOIN LatestEvents le ON le.cuId = cc.cuId
+                -- slaThresholdMs: observed only
+                SELECT r.CU_ID, r.CU_Name,
+                       'slaThresholdMs', NULL, lo.ObservedSlaThresholdMs, CAST(0 AS BIT)
+                FROM cfl.CU_Registry r
+                LEFT JOIN LatestObserved lo ON lo.CuId = r.CU_ID
 
                 UNION ALL
 
-                SELECT cc.cuId, cc.displayName,
-                       'fileTypes',
-                       ISNULL(cc.fileTypes, '(not set)'),
-                       le.observedFileTypes,
-                       CAST(0 AS BIT)   -- informational only, not flagged as drift
-                FROM observability.CuConfiguration cc
-                LEFT JOIN LatestEvents le ON le.cuId = cc.cuId
+                -- fileTypes: observed only, informational
+                SELECT r.CU_ID, r.CU_Name,
+                       'fileTypes', NULL, lo.ObservedFileTypes, CAST(0 AS BIT)
+                FROM cfl.CU_Registry r
+                LEFT JOIN LatestObserved lo ON lo.CuId = r.CU_ID
             )
-            SELECT cuId, displayName, Field, Configured, Observed, IsDrift
+            SELECT CuId, DisplayName, Field, Configured, Observed, IsDrift
             FROM DriftRows
-            WHERE (@CuId IS NULL OR cuId = @CuId)
-            ORDER BY displayName, Field;
+            WHERE (@CuId IS NULL OR CuId = @CuId)
+            ORDER BY DisplayName, Field;
             """;
 
         using var db = Connect();
@@ -177,10 +172,10 @@ public class CuConfigurationRepository(IConfiguration config)
     {
         const string sql = """
             SELECT
-                FORMAT(onboardingDate, 'yyyy-MM') AS Month,
-                COUNT(*)                          AS Count
-            FROM observability.CuConfiguration
-            GROUP BY FORMAT(onboardingDate, 'yyyy-MM')
+                FORMAT(CreatedAt, 'yyyy-MM') AS Month,
+                COUNT(*)                     AS Count
+            FROM cfl.CU_Registry
+            GROUP BY FORMAT(CreatedAt, 'yyyy-MM')
             ORDER BY Month;
             """;
 
@@ -193,9 +188,14 @@ public class CuConfigurationRepository(IConfiguration config)
     public async Task<IEnumerable<AdapterSpreadDto>> GetAdapterSpreadAsync()
     {
         const string sql = """
-            SELECT adapterId, COUNT(*) AS Count
-            FROM observability.CuConfiguration
-            GROUP BY adapterId
+            SELECT ObservedAdapterId AS AdapterId, COUNT(*) AS Count
+            FROM (
+                SELECT CuId, MAX(AdapterId) AS ObservedAdapterId
+                FROM telemetry.AdapterEvents
+                GROUP BY CuId
+            ) CuAdapters
+            WHERE ObservedAdapterId IS NOT NULL
+            GROUP BY ObservedAdapterId
             ORDER BY Count DESC;
             """;
 
@@ -208,10 +208,12 @@ public class CuConfigurationRepository(IConfiguration config)
     public async Task<IEnumerable<MappingSpreadDto>> GetMappingSpreadAsync()
     {
         const string sql = """
-            SELECT mappingVersion, COUNT(*) AS Count
-            FROM observability.CuConfiguration
-            WHERE mappingVersion IS NOT NULL
-            GROUP BY mappingVersion
+            SELECT
+                CAST(ActiveMappingVersion AS NVARCHAR) AS MappingVersion,
+                COUNT(*)                               AS Count
+            FROM cfl.CU_Registry
+            WHERE ActiveMappingVersion IS NOT NULL
+            GROUP BY ActiveMappingVersion
             ORDER BY Count DESC;
             """;
 
@@ -224,15 +226,19 @@ public class CuConfigurationRepository(IConfiguration config)
     public async Task<IEnumerable<FirstDeliveryGapDto>> GetFirstDeliveryGapAsync()
     {
         const string sql = """
+            WITH FirstRuns AS (
+                SELECT CuId, MIN(Timestamp) AS FirstRunAt
+                FROM telemetry.AdapterEvents
+                WHERE EventType IN ('RunCompleted','IngestionCompleted')
+                GROUP BY CuId
+            )
             SELECT
-                cc.displayName,
-                cc.cuId,
-                cc.onboardingStatus,
-                DATEDIFF(DAY, cc.onboardingDate, MIN(ie.timestamp)) AS GapDays
-            FROM observability.CuConfiguration cc
-            LEFT JOIN observability.IngestionEvents ie
-                ON ie.cuId = cc.cuId AND ie.eventType = 'RunCompleted'
-            GROUP BY cc.cuId, cc.displayName, cc.onboardingDate, cc.onboardingStatus
+                r.CU_Name       AS DisplayName,
+                r.CU_ID         AS CuId,
+                r.OnboardingStatus,
+                DATEDIFF(DAY, r.CreatedAt, fr.FirstRunAt) AS GapDays
+            FROM cfl.CU_Registry r
+            LEFT JOIN FirstRuns fr ON fr.CuId = r.CU_ID
             ORDER BY GapDays DESC;
             """;
 
@@ -247,23 +253,23 @@ public class CuConfigurationRepository(IConfiguration config)
         const string sql = """
             WITH CuStats AS (
                 SELECT
-                    ie.cuId,
-                    COUNT(*)                                                             AS TotalRuns,
-                    SUM(CASE WHEN JSON_VALUE(ie.metrics,'$.rowsFailed') = '0'
-                             THEN 1.0 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)        AS SuccessRate
-                FROM observability.IngestionEvents ie
-                WHERE ie.eventType = 'RunCompleted'
-                GROUP BY ie.cuId
+                    CuId,
+                    COUNT(*)                                                                     AS TotalRuns,
+                    SUM(CASE WHEN JSON_VALUE(Metrics,'$.rowsFailed') = '0' THEN 1.0 ELSE 0 END)
+                        * 100.0 / NULLIF(COUNT(*), 0)                                           AS SuccessRate
+                FROM telemetry.AdapterEvents
+                WHERE EventType = 'RunCompleted'
+                GROUP BY CuId
             )
             SELECT
-                ISNULL(cc.ownerTeam, '(unassigned)')  AS OwnerTeam,
-                COUNT(*)                              AS TotalCus,
-                SUM(CASE WHEN cc.onboardingStatus = 'active'     THEN 1 ELSE 0 END) AS ActiveCount,
-                SUM(CASE WHEN cc.onboardingStatus = 'onboarding' THEN 1 ELSE 0 END) AS OnboardingCount,
-                AVG(cs.SuccessRate)                   AS AvgSuccessRate
-            FROM observability.CuConfiguration cc
-            LEFT JOIN CuStats cs ON cs.cuId = cc.cuId
-            GROUP BY ISNULL(cc.ownerTeam, '(unassigned)')
+                ISNULL(r.AssignedEngineer, '(unassigned)') AS OwnerTeam,
+                COUNT(*)                                    AS TotalCus,
+                SUM(CASE WHEN r.OnboardingStatus = 'Active'     THEN 1 ELSE 0 END) AS ActiveCount,
+                SUM(CASE WHEN r.OnboardingStatus = 'Onboarding' THEN 1 ELSE 0 END) AS OnboardingCount,
+                AVG(cs.SuccessRate)                         AS AvgSuccessRate
+            FROM cfl.CU_Registry r
+            LEFT JOIN CuStats cs ON cs.CuId = r.CU_ID
+            GROUP BY ISNULL(r.AssignedEngineer, '(unassigned)')
             ORDER BY TotalCus DESC;
             """;
 

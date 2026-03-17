@@ -62,4 +62,6 @@ app.MapDemoEndpoints();
 
 app.MapHub<TelemetryHub>("/hubs/telemetry");
 
+app.MapGet("/healthz", () => Results.Ok("healthy"));
+
 app.Run();

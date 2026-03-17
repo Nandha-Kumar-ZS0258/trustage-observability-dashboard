@@ -11,7 +11,7 @@ public static class DemoEndpoints
 
         // POST /api/demo/upload
         // Accepts a multipart file upload and stores it in Azure Blob Storage
-        // under the CreditUnionJson/{filename} path.
+        // under the CreditUnionJson/{filename} path, which triggers the adaptor pipeline.
         group.MapPost("/upload", async (HttpRequest request, IConfiguration config, ILogger<Program> logger) =>
         {
             if (!request.HasFormContentType)

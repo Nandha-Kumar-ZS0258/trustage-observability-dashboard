@@ -20,7 +20,8 @@ public enum HealthStatus
     Healthy,
     Overdue,
     Failed,
-    Awaiting
+    Awaiting,
+    Dev
 }
 
 // ─── CU Configuration ────────────────────────────────────────────────────────
@@ -117,6 +118,9 @@ public class LifecycleCountsDto
 
     /// <summary>Ready-for-first-feed partners waiting longer than the staleness threshold.</summary>
     public int OverdueReady { get; set; }
+
+    /// <summary>Average days Onboarding CUs have been in the Onboarding state.</summary>
+    public int AvgOnboardingDays { get; set; }
 }
 
 // ─── Lifecycle Panel Note ─────────────────────────────────────────────────────

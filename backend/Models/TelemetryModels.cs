@@ -87,9 +87,11 @@ public class RunEventDto
 
 public class StageDurationsDto
 {
-    public int? Download { get; set; }
-    public int? Process { get; set; }
-    public int? Persist { get; set; }
+    public int? Parse { get; set; }
+    public int? Map { get; set; }
+    public int? Transform { get; set; }
+    public int? Validate { get; set; }
+    public int? Load { get; set; }
     public int? Total { get; set; }
 }
 
@@ -186,9 +188,11 @@ public class ErrorFrequencyDto
 public class StageDurationHeatmapDto
 {
     public string CuId { get; set; } = "";
-    public double? AvgDownloadMs { get; set; }
-    public double? AvgProcessMs { get; set; }
-    public double? AvgPersistMs { get; set; }
+    public double? AvgParseMs { get; set; }
+    public double? AvgMapMs { get; set; }
+    public double? AvgTransformMs { get; set; }
+    public double? AvgValidateMs { get; set; }
+    public double? AvgLoadMs { get; set; }
 }
 
 public class ThroughputTrendDto
@@ -208,9 +212,11 @@ public class SlowestRunDto
 
 public class StageSplitDto
 {
-    public double AvgDownloadMs { get; set; }
-    public double AvgProcessMs { get; set; }
-    public double AvgPersistMs { get; set; }
+    public double AvgParseMs { get; set; }
+    public double AvgMapMs { get; set; }
+    public double AvgTransformMs { get; set; }
+    public double AvgValidateMs { get; set; }
+    public double AvgLoadMs { get; set; }
 }
 
 public class MemoryTrendDto

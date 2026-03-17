@@ -42,7 +42,7 @@ public class ProgrammeRepository(IConfiguration config)
                     r.StateEnteredAt,
                     r.CreatedAt,
                     CASE
-                        WHEN r.OnboardingStatus = 'Onboarding' THEN 'Onboarding'
+                        WHEN r.OnboardingStatus IN ('Onboarding', 'New') THEN 'Onboarding'
                         WHEN r.OnboardingStatus = 'Active'
                          AND NOT EXISTS (
                                 SELECT 1 FROM kafka.BatchJourneys bj
@@ -69,7 +69,10 @@ public class ProgrammeRepository(IConfiguration config)
                 SUM(CASE
                     WHEN LifecycleState = 'ReadyForFirstFeed'
                      AND DATEDIFF(day, ISNULL(StateEnteredAt, CreatedAt), GETUTCDATE()) > 7
-                    THEN 1 ELSE 0 END) AS OverdueReady
+                    THEN 1 ELSE 0 END) AS OverdueReady,
+                ISNULL(AVG(CASE WHEN LifecycleState = 'Onboarding'
+                    THEN DATEDIFF(day, ISNULL(StateEnteredAt, CreatedAt), GETUTCDATE())
+                    END), 0) AS AvgOnboardingDays
             FROM CuStates;
             """;
 
@@ -123,7 +126,7 @@ public class ProgrammeRepository(IConfiguration config)
 
                     -- Derived lifecycle state (not a stored column)
                     CASE
-                        WHEN r.OnboardingStatus = 'Onboarding'          THEN 'Onboarding'
+                        WHEN r.OnboardingStatus IN ('Onboarding', 'New') THEN 'Onboarding'
                         WHEN r.OnboardingStatus = 'Active'
                          AND lc.CuId IS NULL                            THEN 'ReadyForFirstFeed'
                         ELSE 'BAU'
@@ -138,7 +141,7 @@ public class ProgrammeRepository(IConfiguration config)
 
                     -- Health status per Section 3 of MONITORING_SPEC.md
                     CASE
-                        WHEN r.OnboardingStatus = 'Onboarding'  THEN 'Awaiting'
+                        WHEN r.OnboardingStatus IN ('Onboarding', 'New') THEN 'Dev'
                         WHEN lc.CuId IS NULL                    THEN 'Awaiting'
                         WHEN EXISTS (
                             SELECT 1 FROM kafka.DlqEvents dlq
@@ -234,7 +237,7 @@ public class ProgrammeRepository(IConfiguration config)
                 r.CreatedAt,
                 DATEDIFF(day, ISNULL(r.StateEnteredAt, r.CreatedAt), GETUTCDATE()) AS DaysInState,
                 CASE
-                    WHEN r.OnboardingStatus = 'Onboarding'     THEN 'Onboarding'
+                    WHEN r.OnboardingStatus IN ('Onboarding', 'New') THEN 'Onboarding'
                     WHEN r.OnboardingStatus = 'Active'
                      AND NOT EXISTS (
                             SELECT 1 FROM kafka.BatchJourneys bj
@@ -244,7 +247,7 @@ public class ProgrammeRepository(IConfiguration config)
                 END AS LifecycleState
             FROM cfl.CU_Registry r
             WHERE CASE
-                    WHEN r.OnboardingStatus = 'Onboarding'     THEN 'Onboarding'
+                    WHEN r.OnboardingStatus IN ('Onboarding', 'New') THEN 'Onboarding'
                     WHEN r.OnboardingStatus = 'Active'
                      AND NOT EXISTS (
                             SELECT 1 FROM kafka.BatchJourneys bj

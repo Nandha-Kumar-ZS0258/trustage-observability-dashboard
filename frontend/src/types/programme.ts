@@ -1,7 +1,7 @@
 /** @see MONITORING_SPEC.md Section 10 for interface definitions */
 
 export type LifecycleState = 'Onboarding' | 'ReadyForFirstFeed' | 'BAU';
-export type HealthStatus = 'Healthy' | 'Overdue' | 'Failed' | 'Awaiting';
+export type HealthStatus = 'Healthy' | 'Overdue' | 'Failed' | 'Awaiting' | 'Dev';
 export type CoreBankingPlatform = 'Symitar' | 'Corelation' | 'Fiserv' | 'DNA' | string;
 export type FeedStatus = 'Delivered' | 'Failed' | 'Partial' | 'InProgress';
 
@@ -44,6 +44,7 @@ export interface LifecycleCounts {
   total: number;
   overdueBau: number;
   overdueReady: number;
+  avgOnboardingDays: number;
 }
 
 export interface GanttEntry {

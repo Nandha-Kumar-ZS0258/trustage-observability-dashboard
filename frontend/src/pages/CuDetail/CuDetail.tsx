@@ -43,10 +43,10 @@ function statusPillClasses(status: FeedStatus): string {
 }
 
 function scoreColour(score: number | null): string {
-  if (score == null) return 'text-gray-500';
-  if (score >= 95)   return 'text-green-400';
-  if (score >= 80)   return 'text-amber-400';
-  return 'text-red-400';
+  if (score == null) return 'text-[#94A3B8]';
+  if (score >= 95)   return 'text-[#15803D]';
+  if (score >= 80)   return 'text-[#B45309]';
+  return 'text-[#B91C1C]';
 }
 
 function formatCompact(n: number): string {
@@ -64,17 +64,17 @@ function CuExceptionBanner({ cuId }: { cuId: string }) {
   return (
     <div
       className="flex items-center gap-3 rounded-lg px-4 py-2.5 mb-5 text-sm
-                 bg-red-950/50 border border-red-900/50 border-l-4 border-l-red-500"
+                 bg-[#FEF2F2] border border-[#FECACA] border-l-4 border-l-[#DC2626]"
       role="alert"
     >
       <span className="shrink-0 text-base" aria-hidden="true">🔴</span>
-      <span className="flex-1 text-red-300 font-medium">
+      <span className="flex-1 text-[#991B1B] font-medium">
         {count} active feed {count === 1 ? 'exception' : 'exceptions'} for this CU
         partner — unresolved
       </span>
       <a
         href="/exceptions"
-        className="shrink-0 text-red-400 hover:text-red-200 font-semibold transition-colors"
+        className="shrink-0 text-[#DC2626] hover:text-[#991B1B] font-semibold transition-colors"
       >
         View Exceptions →
       </a>
@@ -85,9 +85,11 @@ function CuExceptionBanner({ cuId }: { cuId: string }) {
 // ── Recharts tooltip style (shared) ──────────────────────────────────────────
 
 const TOOLTIP_STYLE = {
-  contentStyle: { background: '#1f2937', border: '1px solid #374151', borderRadius: 8 },
-  labelStyle:   { color: '#9ca3af' },
+  contentStyle: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 },
+  labelStyle:   { color: '#64748b' },
 };
+const GRID_COLOR = '#e2e8f0';
+const TICK_COLOR = '#94a3b8';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -126,11 +128,11 @@ export default function CuDetail() {
 
       {/* ── Breadcrumbs ─────────────────────────────────────────────────────── */}
       <nav className="flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
-        <Link to="/" className="text-blue-400 hover:text-blue-300 transition-colors">
+        <Link to="/" className="text-[#1A6DB5] hover:text-[#0F2744] transition-colors">
           CU Programme View
         </Link>
-        <span className="text-gray-600">/</span>
-        <span className="text-gray-300">{cuName}</span>
+        <span className="text-[#94A3B8]">/</span>
+        <span className="text-[#334155]">{cuName}</span>
       </nav>
 
       {/* ── CU Header — full-width navy bar ────────────────────────────────── */}
@@ -218,11 +220,11 @@ export default function CuDetail() {
         ]).map(({ label, value, sub, accent }) => (
           <div key={label} className="card relative overflow-hidden">
             <div className={`absolute top-0 left-0 right-0 h-0.5 ${accent}`} />
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-2 leading-snug">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#64748B] mb-2 leading-snug">
               {label}
             </p>
-            <p className="text-3xl font-bold text-white leading-none mb-1">{value}</p>
-            <p className="text-xs text-gray-500">{sub}</p>
+            <p className="text-3xl font-bold text-[#0F2744] leading-none mb-1">{value}</p>
+            <p className="text-xs text-[#64748B]">{sub}</p>
           </div>
         ))}
       </div>
@@ -233,14 +235,14 @@ export default function CuDetail() {
         {/* Delivery Duration Trend */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-white">Delivery Duration Trend</h2>
+            <h2 className="text-sm font-semibold text-[#0F2744]">Delivery Duration Trend</h2>
             <div className="flex gap-1">
               {DAYS_OPTIONS.map(d => (
                 <button
                   key={d}
                   onClick={() => setDays(d)}
                   className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
-                    days === d ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800'
+                    days === d ? 'bg-[#1A6DB5] text-white' : 'text-[#64748B] hover:bg-slate-100'
                   }`}
                 >
                   {d}d
@@ -250,15 +252,15 @@ export default function CuDetail() {
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={durationTrend} margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={d => format(new Date(d), 'MMM d')}
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
               />
               <YAxis
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => `${(v / 1000).toFixed(1)}s`}
               />
@@ -283,21 +285,21 @@ export default function CuDetail() {
 
         {/* Data Alignment Score Over Time */}
         <div className="card">
-          <h2 className="text-sm font-semibold text-white mb-4">
+          <h2 className="text-sm font-semibold text-[#0F2744] mb-4">
             Data Alignment Score Over Time
           </h2>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={valTrend} margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={d => format(new Date(d), 'MMM d')}
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => `${v}%`}
               />
@@ -320,21 +322,21 @@ export default function CuDetail() {
 
         {/* Step Timing Trend — stacked area, last 30 feeds */}
         <div className="card">
-          <h2 className="text-sm font-semibold text-white mb-4">Step Timing Trend</h2>
+          <h2 className="text-sm font-semibold text-[#0F2744] mb-4">Step Timing Trend</h2>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart
               data={stepTimingTrend ?? []}
               margin={{ top: 4, right: 16, bottom: 4, left: 8 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={d => format(new Date(d), 'MMM d')}
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
               />
               <YAxis
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => `${(v / 1000).toFixed(1)}s`}
               />
@@ -347,7 +349,7 @@ export default function CuDetail() {
               />
               <Legend
                 iconType="square" iconSize={8}
-                wrapperStyle={{ fontSize: 10, color: '#9ca3af' }}
+                wrapperStyle={{ fontSize: 10, color: '#64748b' }}
               />
               <Area stackId="1" type="monotone" dataKey="receiveCuFileMs"
                 name="Receive CU File"
@@ -375,7 +377,7 @@ export default function CuDetail() {
 
         {/* Member Records Volume Trend */}
         <div className="card">
-          <h2 className="text-sm font-semibold text-white mb-4">
+          <h2 className="text-sm font-semibold text-[#0F2744] mb-4">
             Member Records Volume Trend
           </h2>
           <ResponsiveContainer width="100%" height={180}>
@@ -383,22 +385,22 @@ export default function CuDetail() {
               data={dailyVolume}
               margin={{ top: 4, right: 16, bottom: 4, left: 8 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={d => format(new Date(d), 'MMM d')}
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
               />
               <YAxis
                 yAxisId="records" orientation="left"
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
                 tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)}
               />
               <YAxis
                 yAxisId="feeds" orientation="right"
-                tick={{ fill: '#6b7280', fontSize: 11 }}
+                tick={{ fill: TICK_COLOR, fontSize: 11 }}
                 axisLine={false} tickLine={false}
               />
               <Tooltip
@@ -407,7 +409,7 @@ export default function CuDetail() {
               />
               <Legend
                 iconType="circle" iconSize={8}
-                wrapperStyle={{ fontSize: 11, color: '#9ca3af' }}
+                wrapperStyle={{ fontSize: 11, color: '#64748b' }}
               />
               <Bar
                 yAxisId="records" dataKey="totalRows"
@@ -427,28 +429,28 @@ export default function CuDetail() {
 
       {/* ── Recent Feeds ──────────────────────────────────────────────────── */}
       <div className="card">
-        <h2 className="text-sm font-semibold text-white mb-4">Recent Feeds</h2>
+        <h2 className="text-sm font-semibold text-[#0F2744] mb-4">Recent Feeds</h2>
         {recentFeeds.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">No feeds found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-800 text-left">
+                <tr className="border-b border-[#E2E8F0] text-left">
                   {[
                     'Date', 'Duration', 'Member Records',
                     'Records Rejected', 'Data Alignment Score', 'Status',
                   ].map(h => (
                     <th
                       key={h}
-                      className="pb-2.5 pr-4 text-xs text-gray-500 font-medium whitespace-nowrap"
+                      className="pb-2.5 pr-4 text-xs text-[#64748B] font-medium whitespace-nowrap"
                     >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/50">
+              <tbody className="divide-y divide-[#E2E8F0]">
                 {recentFeeds.slice(0, 20).map(feed => (
                   <tr
                     key={feed.feedReferenceId}
@@ -456,17 +458,17 @@ export default function CuDetail() {
                     className="table-row-hover cursor-pointer"
                   >
                     {/* Date */}
-                    <td className="py-2.5 pr-4 text-gray-400 text-xs whitespace-nowrap">
+                    <td className="py-2.5 pr-4 text-[#475569] text-xs whitespace-nowrap">
                       {format(new Date(feed.feedStarted), 'MMM d, yyyy HH:mm')}
                     </td>
                     {/* Duration */}
-                    <td className="py-2.5 pr-4 text-gray-300 text-xs tabular-nums whitespace-nowrap">
+                    <td className="py-2.5 pr-4 text-[#334155] text-xs tabular-nums whitespace-nowrap">
                       {feed.totalDurationMs != null
                         ? `${(feed.totalDurationMs / 1000).toFixed(1)}s`
                         : '—'}
                     </td>
                     {/* Member Records */}
-                    <td className="py-2.5 pr-4 text-gray-300 text-xs tabular-nums">
+                    <td className="py-2.5 pr-4 text-[#334155] text-xs tabular-nums">
                       {feed.memberRecordsProcessed?.toLocaleString() ?? '—'}
                     </td>
                     {/* Records Rejected */}
@@ -509,11 +511,11 @@ export default function CuDetail() {
       {/* ── Feed Exception History (existing — kept) ──────────────────────── */}
       {errorHistory && errorHistory.length > 0 && (
         <div className="card">
-          <h2 className="text-sm font-semibold text-white mb-4">Feed Exception History</h2>
+          <h2 className="text-sm font-semibold text-[#0F2744] mb-4">Feed Exception History</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-800">
+                <tr className="border-b border-[#E2E8F0]">
                   <th className="pb-2 text-xs text-gray-500 text-left font-medium">
                     Exception Code
                   </th>
@@ -522,10 +524,10 @@ export default function CuDetail() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/50">
+              <tbody className="divide-y divide-[#E2E8F0]">
                 {errorHistory.map(e => (
                   <tr key={e.errorCode}>
-                    <td className="py-2 text-sm text-gray-300 font-mono">{e.errorCode}</td>
+                    <td className="py-2 text-sm text-[#334155] font-mono">{e.errorCode}</td>
                     <td className="py-2 text-sm text-right tabular-nums">
                       <span className="badge bg-red-500/15 text-red-400">{e.count}</span>
                     </td>

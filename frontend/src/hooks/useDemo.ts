@@ -78,10 +78,12 @@ function nextStatus(
   if (stage === 'publishing' && /Overall=Failed/i.test(message))   return 'warn';
   if (level === 'warn') return current === 'pass' ? 'warn' : current === 'pending' ? 'running' : current;
 
-  // "Processed message" = stage completed successfully
-  if (/Processed message for CU/i.test(message)) {
-    return current === 'warn' ? 'warn' : 'pass';
-  }
+  // Stage completion patterns from DemoTraceService.BuildMessage()
+  if (stage === 'ingestion'        && /Ingestion started/i.test(message))         return 'pass';
+  if (stage === 'transform'        && /Mapping applied/i.test(message))            return 'pass';
+  if (stage === 'schemaValidation' && /Schema validation passed/i.test(message))  return 'pass';
+  if (stage === 'rulesValidation'  && /Rules validation complete/i.test(message)) return current === 'warn' ? 'warn' : 'pass';
+  if (stage === 'publishing'       && /Run completed/i.test(message))              return current === 'warn' ? 'warn' : 'pass';
 
   // Any log for this stage means it's at least running
   if (current === 'pending') return 'running';
