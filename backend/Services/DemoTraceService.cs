@@ -1,7 +1,4 @@
-using System.Data;
-using Dapper;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Data.SqlClient;
 using TruStage.Observability.Api.Hubs;
 using TruStage.Observability.Api.Models;
 
@@ -20,20 +17,7 @@ namespace TruStage.Observability.Api.Services;
 /// </summary>
 public sealed class DemoTraceService : IHostedService, IDisposable
 {
-    private static readonly Dictionary<string, string> EventTypeToStage =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["BlobReceived"]        = "blob",
-            ["IngestionStarted"]    = "ingestion",
-            ["IngestionFailed"]     = "ingestion",
-            ["MappingApplied"]      = "transform",
-            ["SchemaDetected"]      = "schemaValidation",
-            ["ValidationCompleted"] = "rulesValidation",
-            ["IngestionCompleted"]  = "publishing",
-            ["RunCompleted"]        = "publishing",
-            ["RunFailed"]           = "system",
-            ["RetryAttempted"]      = "system",
-        };
+    private readonly Dictionary<string, RunMetrics> _activeRuns = new();
 
     private readonly IHubContext<TelemetryHub> _hub;
     private readonly IConfiguration            _config;
@@ -56,13 +40,13 @@ public sealed class DemoTraceService : IHostedService, IDisposable
         var connStr = _config.GetConnectionString("TruStage");
         if (string.IsNullOrWhiteSpace(connStr))
         {
-            _logger.LogWarning("[DemoTrace] ConnectionStrings:TruStage is not configured — Demo tab polling disabled.");
+            _logger.LogWarning("[DemoTrace] ConnectionStrings:TruStage is not configured — Pipeline Trace polling disabled.");
             return Task.CompletedTask;
         }
 
         _cts      = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _pollTask = PollLoopAsync(connStr, _cts.Token);
-        _logger.LogInformation("[DemoTrace] Polling telemetry.AdapterEvents every 1 s for live Demo tab updates.");
+        _logger.LogInformation("[DemoTrace] Polling telemetry.AdapterEvents every 1 s for live Pipeline Trace updates.");
         return Task.CompletedTask;
     }
 
@@ -96,10 +80,10 @@ public sealed class DemoTraceService : IHostedService, IDisposable
             {
                 await Task.Delay(pollMs, ct).ConfigureAwait(false);
 
-                // Fetch from (watermark - 2 s) to catch any rows that were committed
-                // slightly late relative to the previous tick.
                 var fetchSince = watermark.AddSeconds(-2);
-                var rows = await FetchNewEventsAsync(connStr, fetchSince, ct).ConfigureAwait(false);
+                var rows = await PipelineMessageBuilder
+                    .FetchEventsAsync(connStr, fetchSince, ct)
+                    .ConfigureAwait(false);
 
                 DateTimeOffset newWatermark = watermark;
 
@@ -107,23 +91,30 @@ public sealed class DemoTraceService : IHostedService, IDisposable
                 {
                     if (ct.IsCancellationRequested) break;
 
-                    // Skip rows already broadcast (within the 2-s lookback overlap)
                     if (!seen.Add(row.EventId)) continue;
-
-                    // Skip rows older than or equal to the current watermark — these are
-                    // the overlap rows that weren't in seen yet but are not new
                     if (row.CreatedAt <= watermark) continue;
 
-                    string stage = EventTypeToStage.TryGetValue(row.EventType, out var s) ? s : "system";
-                    string level = row.EventType is "RunFailed" or "IngestionFailed" ? "error"
-                                 : row.EventType is "RetryAttempted"                 ? "warn"
-                                 : "info";
+                    PipelineMessageBuilder.UpdateMetrics(_activeRuns, row);
 
-                    var evt = new PipelineLogEventDto(stage, level, BuildMessage(row), row.CreatedAt);
-                    await _hub.Clients.All.SendAsync("PipelineLog", evt, ct).ConfigureAwait(false);
+                    foreach (var (msgStage, msgLevel, msg) in PipelineMessageBuilder.BuildMessages(row, _activeRuns))
+                    {
+                        var evt = new PipelineLogEventDto(msgStage, msgLevel, msg, row.CreatedAt);
+                        await _hub.Clients.All.SendAsync("PipelineLog", evt, ct).ConfigureAwait(false);
+                    }
 
-                    _logger.LogDebug("[DemoTrace] Broadcast {EventType} for CU {CuId} → {Stage}",
-                        row.EventType, row.CuId, stage);
+                    _logger.LogDebug("[DemoTrace] Broadcast {EventType} for CU {CuId}",
+                        row.EventType, row.CuId);
+
+                    if (row.EventType is "RunCompleted" or "RunFailed")
+                    {
+                        if (_activeRuns.TryGetValue(row.CorrelationId, out var m))
+                        {
+                            await _hub.Clients.All.SendAsync("PipelineSummary",
+                                new PipelineSummaryDto(m.Submitted, m.Ingested, m.Blocked, m.Warnings), ct)
+                                .ConfigureAwait(false);
+                            _activeRuns.Remove(row.CorrelationId);
+                        }
+                    }
 
                     if (row.CreatedAt > newWatermark)
                         newWatermark = row.CreatedAt;
@@ -131,10 +122,7 @@ public sealed class DemoTraceService : IHostedService, IDisposable
 
                 watermark = newWatermark;
 
-                // Prevent unbounded growth — clear when large; the CreatedAt check above
-                // handles correctness even after a clear, so this is safe.
-                if (seen.Count > 200)
-                    seen.Clear();
+                if (seen.Count > 200) seen.Clear();
             }
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
@@ -142,104 +130,5 @@ public sealed class DemoTraceService : IHostedService, IDisposable
                 _logger.LogError(ex, "[DemoTrace] Poll tick failed — retrying next interval.");
             }
         }
-    }
-
-    private static async Task<IEnumerable<AdapterEventRow>> FetchNewEventsAsync(
-        string connStr, DateTimeOffset since, CancellationToken ct)
-    {
-        const string sql = """
-            SELECT
-                EventId,
-                EventType,
-                CuId,
-                CorrelationId,
-                CreatedAt,
-                BlobContext,
-                PipelineMetrics,
-                ValidationMetrics,
-                ErrorContext
-            FROM telemetry.AdapterEvents
-            WHERE CreatedAt > @since
-            ORDER BY CreatedAt
-            """;
-
-        using IDbConnection db = new SqlConnection(connStr);
-        return await db.QueryAsync<AdapterEventRow>(sql, new { since }, commandTimeout: 5)
-            .ConfigureAwait(false);
-    }
-
-    // ── Message builder ───────────────────────────────────────────────────────
-
-    private static string BuildMessage(AdapterEventRow row)
-    {
-        string cu   = string.IsNullOrEmpty(row.CuId) ? "unknown" : row.CuId;
-        string corr = string.IsNullOrEmpty(row.CorrelationId) ? ""
-                    : $" [{row.CorrelationId[..Math.Min(8, row.CorrelationId.Length)]}…]";
-
-        return row.EventType switch
-        {
-            "BlobReceived" when JsonTryGet(row.BlobContext, "blobName") is { } bn
-                => $"[blob] Blob received: {bn} for CU {cu}{corr}",
-
-            "BlobReceived"       => $"[blob] Blob trigger received for CU {cu}{corr}",
-            "IngestionStarted"   => $"[ingestion] Ingestion started for CU {cu}{corr}",
-            "MappingApplied"     => $"[transform] Mapping applied for CU {cu}{corr}",
-            "SchemaDetected"     => $"[schemaValidation] Schema validation passed for CU {cu}{corr}",
-
-            "ValidationCompleted" when JsonTryGet(row.ValidationMetrics, "validationErrorsCount") is { } ec
-                => $"[rulesValidation] Rules validation complete — {ec} error(s) for CU {cu}{corr}",
-
-            "ValidationCompleted" => $"[rulesValidation] Rules validation complete for CU {cu}{corr}",
-
-            "IngestionCompleted" when JsonTryGet(row.PipelineMetrics, "rowsProcessed") is { } rp
-                => $"[publishing] Ingestion completed — {rp} rows processed for CU {cu}{corr}",
-
-            "IngestionCompleted" => $"[publishing] Ingestion completed for CU {cu}{corr}",
-            "RunCompleted"       => $"[publishing] Run completed for CU {cu}{corr}",
-
-            "RunFailed" when JsonTryGet(row.ErrorContext, "errorMessage") is { } em
-                => $"[system] Run failed for CU {cu}: {em}{corr}",
-
-            "RunFailed"       => $"[system] Run failed for CU {cu}{corr}",
-            "IngestionFailed" => $"[ingestion] Ingestion failed for CU {cu}{corr}",
-            "RetryAttempted"  => $"[system] Retry attempted for CU {cu}{corr}",
-            _                 => $"[system] {row.EventType} for CU {cu}{corr}",
-        };
-    }
-
-    // Extracts a scalar string value from a JSON column without a full parse.
-    private static string? JsonTryGet(string? json, string key)
-    {
-        if (string.IsNullOrEmpty(json)) return null;
-        string search = $"\"{key}\":";
-        int idx = json.IndexOf(search, StringComparison.OrdinalIgnoreCase);
-        if (idx < 0) return null;
-        idx += search.Length;
-        while (idx < json.Length && json[idx] == ' ') idx++;
-        if (idx >= json.Length) return null;
-        if (json[idx] == '"')
-        {
-            int start = ++idx;
-            while (idx < json.Length && !(json[idx] == '"' && json[idx - 1] != '\\')) idx++;
-            return json[start..idx];
-        }
-        int numStart = idx;
-        while (idx < json.Length && json[idx] != ',' && json[idx] != '}' && json[idx] != ' ') idx++;
-        return json[numStart..idx];
-    }
-
-    // ── DB row model ──────────────────────────────────────────────────────────
-
-    private sealed class AdapterEventRow
-    {
-        public Guid           EventId           { get; set; }
-        public string         EventType         { get; set; } = "";
-        public string         CuId              { get; set; } = "";
-        public string         CorrelationId     { get; set; } = "";
-        public DateTimeOffset CreatedAt         { get; set; }
-        public string?        BlobContext       { get; set; }
-        public string?        PipelineMetrics   { get; set; }
-        public string?        ValidationMetrics { get; set; }
-        public string?        ErrorContext      { get; set; }
     }
 }

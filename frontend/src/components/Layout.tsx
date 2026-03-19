@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useParams } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
-  LayoutGrid, Inbox, History, Building, AlertTriangle, FlaskConical,
+  LayoutGrid, Inbox, History, Building, AlertTriangle, Activity, Server,
 } from 'lucide-react';
 import { useUnresolvedCount } from '../hooks/useUnresolvedCount';
 
@@ -91,10 +91,16 @@ export function Layout() {
           {/* ── Separator ─────────────────────────────────────────────── */}
           <div className="my-2 border-t border-gray-800" />
 
-          {/* ── Demo tab ───────────────────────────────────────────────── */}
-          <NavLink to="/demo" className={({ isActive }) => linkClass(isActive)}>
-            <FlaskConical className="w-4 h-4 shrink-0" />
-            Demo
+          {/* ── AKS Health ─────────────────────────────────────────────── */}
+          <NavLink to="/aks" className={({ isActive }) => linkClass(isActive)}>
+            <Server className="w-4 h-4 shrink-0" />
+            AKS Health
+          </NavLink>
+
+          {/* ── Pipeline Trace ─────────────────────────────────────────── */}
+          <NavLink to="/pipeline-trace" className={({ isActive }) => linkClass(isActive)}>
+            <Activity className="w-4 h-4 shrink-0" />
+            Pipeline Trace
           </NavLink>
         </nav>
 

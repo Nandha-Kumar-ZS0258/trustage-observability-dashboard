@@ -1,5 +1,6 @@
 using Azure.Storage.Blobs;
 using TruStage.Observability.Api.Models;
+using TruStage.Observability.Api.Services;
 
 namespace TruStage.Observability.Api.Endpoints;
 
@@ -53,5 +54,36 @@ public static class DemoEndpoints
             }
         })
         .DisableAntiforgery();
+
+        // GET /api/demo/history?hours=24
+        // Returns historical pipeline log events from telemetry.AdapterEvents,
+        // converted via the same BuildMessages logic used by the live SignalR feed.
+        // The frontend loads this on page mount to pre-populate the log panel.
+        group.MapGet("/history", async (IConfiguration config, ILogger<Program> logger, int hours = 24) =>
+        {
+            hours = Math.Clamp(hours, 1, 168); // clamp to 1 h – 7 days
+
+            var connStr = config.GetConnectionString("TruStage");
+            if (string.IsNullOrWhiteSpace(connStr))
+                return Results.Problem("Database connection is not configured.");
+
+            var since = DateTimeOffset.UtcNow.AddHours(-hours);
+
+            try
+            {
+                var rows   = (await PipelineMessageBuilder.FetchEventsAsync(connStr, since, CancellationToken.None)).ToList();
+                var events = PipelineMessageBuilder.BuildFromRows(rows).ToList();
+
+                logger.LogInformation("[Demo] History: {Events} log events across {Rows} adapter rows in last {Hours}h",
+                    events.Count, rows.Count, hours);
+
+                return Results.Ok(events);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "[Demo] History query failed");
+                return Results.Problem($"History query failed: {ex.Message}");
+            }
+        });
     }
 }

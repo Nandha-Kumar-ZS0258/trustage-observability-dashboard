@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
-import { uploadDemoFile as apiUploadDemoFile } from '../api/observability';
+import { fetchPipelineHistory } from '../api/observability';
 import type {
   DemoSummary,
-  DemoUploadResult,
   PipelineLogEvent,
   PipelineStage,
   StageInfo,
@@ -26,17 +25,7 @@ function initialStages(): StageInfo[] {
 /** Extract a display metric from a log message for a given stage. */
 function extractMetric(stage: PipelineStage, message: string): string | undefined {
   switch (stage) {
-    case 'ingestion': {
-      // "deserialized 1000 members from …"
-      const m = message.match(/deserialized (\d+) members/i);
-      if (m) return `${m[1]} members`;
-      // "finished: 1000 members, 1811 accounts …"
-      const f = message.match(/finished:\s*(\d+) members/i);
-      if (f) return `${f[1]} members`;
-      break;
-    }
     case 'transform': {
-      // "1000 members, 0 errors"
       const m = message.match(/(\d+) members,\s*(\d+) errors/i);
       if (m) return `${m[1]}m / ${m[2]}err`;
       break;
@@ -47,13 +36,11 @@ function extractMetric(stage: PipelineStage, message: string): string | undefine
       break;
     }
     case 'rulesValidation': {
-      // "Gate1=PASS Gate2=FAIL | blocked=65 warnings=356"
       const g = message.match(/Gate1=(\w+)\s+Gate2=(\w+)/i);
       if (g) return `G1:${g[1]} G2:${g[2]}`;
       break;
     }
     case 'publishing': {
-      // "persisted 935 members"
       const m = message.match(/persisted (\d+) members/i);
       if (m) return `${m[1]} rows → SQL`;
       break;
@@ -70,58 +57,72 @@ function nextStatus(
   stage: PipelineStage,
 ): StageStatus {
   if (current === 'fail') return 'fail';
-
   if (level === 'error') return 'fail';
 
-  // Hard failure indicators
   if (stage === 'rulesValidation' && /Gate2=FAIL/i.test(message)) return 'warn';
   if (stage === 'publishing' && /Overall=Failed/i.test(message))   return 'warn';
   if (level === 'warn') return current === 'pass' ? 'warn' : current === 'pending' ? 'running' : current;
 
-  // Stage completion patterns from DemoTraceService.BuildMessage()
   if (stage === 'ingestion'        && /Ingestion started/i.test(message))         return 'pass';
   if (stage === 'transform'        && /Mapping applied/i.test(message))            return 'pass';
   if (stage === 'schemaValidation' && /Schema validation passed/i.test(message))  return 'pass';
   if (stage === 'rulesValidation'  && /Rules validation complete/i.test(message)) return current === 'warn' ? 'warn' : 'pass';
   if (stage === 'publishing'       && /Run completed/i.test(message))              return current === 'warn' ? 'warn' : 'pass';
 
-  // Any log for this stage means it's at least running
   if (current === 'pending') return 'running';
-
   return current;
 }
 
-/** Pull final summary numbers from publishing logs. */
-function buildSummary(publishingLogs: PipelineLogEvent[], ingestionLogs: PipelineLogEvent[]): DemoSummary {
-  let submitted = 0, ingested = 0, blocked = 0, warnings = 0;
-
-  for (const log of ingestionLogs) {
-    const m = log.message.match(/deserialized (\d+) members/i);
-    if (m) submitted = parseInt(m[1], 10);
+/** Replay a list of logs to derive initial stage states (used for history pre-population). */
+function computeStagesFromLogs(logs: PipelineLogEvent[]): StageInfo[] {
+  const stages = initialStages();
+  for (const log of logs) {
+    if (log.stage === 'system') continue;
+    const stage = log.stage as PipelineStage;
+    const idx = stages.findIndex(s => s.id === stage);
+    if (idx < 0) continue;
+    const s = stages[idx];
+    stages[idx] = {
+      ...s,
+      status:    nextStatus(s.status, log.level, log.message, stage),
+      keyMetric: extractMetric(stage, log.message) ?? s.keyMetric,
+      logs:      [...s.logs, log],
+    };
   }
-
-  for (const log of publishingLogs) {
-    const p = log.message.match(/persisted (\d+) members/i);
-    if (p) ingested = parseInt(p[1], 10);
-
-    const e = log.message.match(/Errors=(\d+)\s+Warnings=(\d+)/i);
-    if (e) { blocked = parseInt(e[1], 10); warnings = parseInt(e[2], 10); }
-  }
-
-  return { submitted, ingested, blocked, warnings };
+  return stages;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useDemo() {
-  const [stages, setStages] = useState<StageInfo[]>(initialStages);
-  const [allLogs, setAllLogs] = useState<PipelineLogEvent[]>([]);
-  const [uploadResult, setUploadResult] = useState<DemoUploadResult | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [summary, setSummary] = useState<DemoSummary | null>(null);
+  const [stages,         setStages]         = useState<StageInfo[]>(initialStages);
+  const [historyLogs,    setHistoryLogs]    = useState<PipelineLogEvent[]>([]);
+  const [liveLogs,       setLiveLogs]       = useState<PipelineLogEvent[]>([]);
+  const [summary,        setSummary]        = useState<DemoSummary | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError,   setHistoryError]   = useState<string | null>(null);
+  const [historyHours,   setHistoryHours]   = useState(24);
 
-  // ── SignalR subscription ──────────────────────────────────────────────────
+  // ── Fetch history when hours selector changes ─────────────────────────────
+  useEffect(() => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    fetchPipelineHistory(historyHours)
+      .then(logs => {
+        const tagged = logs.map(l => ({ ...l, source: 'history' as const }));
+        setHistoryLogs(tagged);
+        // Pre-populate stage cards from historical data so the pipeline flow
+        // reflects the last known run state on page load.
+        setStages(computeStagesFromLogs(tagged));
+      })
+      .catch((err: unknown) => {
+        console.error('[PipelineTrace] History fetch failed:', err);
+        setHistoryError('Failed to load history — check API connection');
+      })
+      .finally(() => setHistoryLoading(false));
+  }, [historyHours]);
+
+  // ── SignalR subscription for live events ──────────────────────────────────
   useEffect(() => {
     const conn = new HubConnectionBuilder()
       .withUrl('/hubs/telemetry')
@@ -129,68 +130,46 @@ export function useDemo() {
       .build();
 
     conn.on('PipelineLog', (evt: PipelineLogEvent) => {
-      setAllLogs(prev => [...prev, evt]);
+      const tagged = { ...evt, source: 'live' as const };
+      setLiveLogs(prev => [...prev, tagged]);
 
       if (evt.stage === 'system') return;
-
       const stage = evt.stage as PipelineStage;
 
-      setStages(prev => {
-        const next = prev.map(s => {
-          if (s.id !== stage) return s;
+      setStages(prev => prev.map(s => {
+        if (s.id !== stage) return s;
+        const newStatus = nextStatus(s.status, evt.level, evt.message, stage);
+        const newMetric = extractMetric(stage, evt.message) ?? s.keyMetric;
+        return { ...s, status: newStatus, keyMetric: newMetric, logs: [...s.logs, tagged] };
+      }));
+    });
 
-          const newStatus  = nextStatus(s.status, evt.level, evt.message, stage);
-          const newMetric  = extractMetric(stage, evt.message) ?? s.keyMetric;
-          const newLogs    = [...s.logs, evt];
-
-          return { ...s, status: newStatus, keyMetric: newMetric, logs: newLogs };
-        });
-
-        // Recompute summary after each publishing update
-        const pub = next.find(s => s.id === 'publishing');
-        const ing = next.find(s => s.id === 'ingestion');
-        if (pub && (pub.status === 'pass' || pub.status === 'warn')) {
-          setSummary(buildSummary(pub.logs, ing?.logs ?? []));
-        }
-
-        return next;
-      });
+    conn.on('PipelineSummary', (dto: DemoSummary) => {
+      setSummary(dto);
     });
 
     conn.start().catch(console.error);
     return () => { conn.stop(); };
   }, []);
 
-  // ── File upload ───────────────────────────────────────────────────────────
-  const uploadFile = useCallback(async (file: File) => {
-    setIsUploading(true);
-    setUploadError(null);
-    try {
-      const result = await apiUploadDemoFile(file);
-      setUploadResult(result);
-      setStages(prev =>
-        prev.map(s => s.id === 'blob' ? { ...s, status: 'pass', keyMetric: file.name } : s)
-      );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Upload failed';
-      setUploadError(msg);
-      setStages(prev =>
-        prev.map(s => s.id === 'blob' ? { ...s, status: 'fail' } : s)
-      );
-    } finally {
-      setIsUploading(false);
-    }
-  }, []);
-
   // ── Reset ─────────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
     setStages(initialStages());
-    setAllLogs([]);
-    setUploadResult(null);
-    setUploadError(null);
+    setHistoryLogs([]);
+    setLiveLogs([]);
     setSummary(null);
-    setIsUploading(false);
   }, []);
 
-  return { stages, allLogs, uploadResult, isUploading, uploadError, summary, uploadFile, reset };
+  return {
+    stages,
+    allLogs: [...historyLogs, ...liveLogs],
+    historyLogs,
+    liveLogs,
+    summary,
+    historyLoading,
+    historyError,
+    historyHours,
+    setHistoryHours,
+    reset,
+  };
 }

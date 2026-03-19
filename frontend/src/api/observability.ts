@@ -9,7 +9,8 @@ import type {
   CuSetupKpi, CuConfiguration, CuDriftRow, OnboardingMonth,
   AdapterSpread, MappingSpread, FirstDeliveryGap, OwnerTeamLoad, CuDirectoryFilters,
 } from '../types/telemetry';
-import type { DemoUploadResult } from '../types/demo';
+import type { DemoUploadResult, PipelineLogEvent } from '../types/demo';
+import type { AksKpi, AdaptorPodHealth, ClusterEvent, EventSummary, NodeHealth, AdaptorHistory, AdaptorRunSummary, AdaptorRunContext } from '../types/aks';
 
 const api = axios.create({ baseURL: '/observability' });
 
@@ -82,3 +83,26 @@ export const uploadDemoFile = (file: File): Promise<DemoUploadResult> => {
   form.append('file', file);
   return apiBase.post('/demo/upload', form).then(r => r.data);
 };
+
+// Returns historical pipeline log events from telemetry.AdapterEvents for the
+// last `hours` hours (default 24). Used by usePipelineTrace to pre-populate the
+// log panel before the live SignalR stream catches up.
+export const fetchPipelineHistory = (hours = 24): Promise<PipelineLogEvent[]> =>
+  apiBase.get('/demo/history', { params: { hours } }).then(r => r.data);
+
+// ─── AKS Health ──────────────────────────────────────────────────────────────
+
+export const fetchAksSummary      = (): Promise<AksKpi>               => apiBase.get('/aks/summary').then(r => r.data);
+export const fetchAdaptorHealth   = (): Promise<AdaptorPodHealth[]>   => apiBase.get('/aks/adaptors').then(r => r.data);
+export const fetchAdaptorById     = (id: string): Promise<AdaptorPodHealth> => apiBase.get(`/aks/adaptors/${id}`).then(r => r.data);
+export const fetchClusterEvents   = (hours = 24): Promise<ClusterEvent[]>   => apiBase.get('/aks/events', { params: { hours } }).then(r => r.data);
+export const fetchEventSummary    = (hours = 24): Promise<EventSummary[]>   => apiBase.get('/aks/events/summary', { params: { hours } }).then(r => r.data);
+export const fetchNodeHealth      = (): Promise<NodeHealth[]>         => apiBase.get('/aks/nodes').then(r => r.data);
+export const fetchAdaptorHistory  = (id: string, hours = 24, days = 7): Promise<AdaptorHistory> =>
+  apiBase.get(`/aks/adaptors/${id}/history`, { params: { hours, days } }).then(r => r.data);
+export const fetchAdaptorEvents   = (id: string, hours = 24): Promise<ClusterEvent[]> =>
+  apiBase.get(`/aks/adaptors/${id}/events`, { params: { hours } }).then(r => r.data);
+export const fetchAdaptorRuns     = (limit = 50): Promise<AdaptorRunSummary[]> =>
+  apiBase.get('/aks/runs', { params: { limit } }).then(r => r.data);
+export const fetchRunContext      = (batchId: string): Promise<AdaptorRunContext> =>
+  apiBase.get(`/aks/runs/${batchId}`).then(r => r.data);

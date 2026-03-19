@@ -14,6 +14,10 @@ builder.Services.AddScoped<ExceptionRepository>();
 builder.Services.AddSingleton<DemoTraceService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DemoTraceService>());
 
+builder.Services.AddScoped<AksRepository>();
+builder.Services.AddSingleton<AksSyncService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AksSyncService>());
+
 builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
@@ -59,6 +63,7 @@ app.MapCuKafkaEndpoints();
 app.MapHistoryEndpoints();
 app.MapExceptionEndpoints();
 app.MapDemoEndpoints();
+app.MapAksEndpoints();
 
 app.MapHub<TelemetryHub>("/hubs/telemetry");
 

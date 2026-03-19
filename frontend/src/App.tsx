@@ -9,6 +9,9 @@ const TodaysFeeds     = lazy(() => import('./pages/TodaysFeeds/TodaysFeeds'));
 const FeedHistory     = lazy(() => import('./pages/FeedHistory/FeedHistory'));
 const FeedExceptions  = lazy(() => import('./pages/FeedExceptions/FeedExceptions'));
 
+// ─── AKS Health ───────────────────────────────────────────────────────────────
+const AksHealth   = lazy(() => import('./pages/AksHealth'));
+
 // ─── Existing pages ───────────────────────────────────────────────────────────
 const Overview    = lazy(() => import('./pages/Overview/Overview'));
 const RunExplorer = lazy(() => import('./pages/RunExplorer/RunExplorer'));
@@ -16,7 +19,7 @@ const RunDetail   = lazy(() => import('./pages/RunExplorer/RunDetail/RunDetail')
 const CuDetail    = lazy(() => import('./pages/CuDetail/CuDetail'));
 const Alerts      = lazy(() => import('./pages/Alerts/Alerts'));
 const CuSetup     = lazy(() => import('./pages/CuSetup/CuSetup'));
-const Demo        = lazy(() => import('./pages/Demo/Demo'));
+const PipelineTrace = lazy(() => import('./pages/PipelineTrace/PipelineTrace'));
 
 function PageLoader() {
   return <div className="p-6"><LoadingSpinner /></div>;
@@ -36,12 +39,13 @@ export default function App() {
           <Route path="exceptions" element={<Suspense fallback={<PageLoader />}><FeedExceptions /></Suspense>} />
 
           {/* ── Existing routes (unchanged) ──────────────────────────────── */}
-          <Route path="demo"          element={<Suspense fallback={<PageLoader />}><Demo /></Suspense>} />
+          <Route path="pipeline-trace" element={<Suspense fallback={<PageLoader />}><PipelineTrace /></Suspense>} />
           <Route path="runs"          element={<Suspense fallback={<PageLoader />}><RunExplorer /></Suspense>} />
           <Route path="runs/:correlationId" element={<Suspense fallback={<PageLoader />}><RunDetail /></Suspense>} />
           <Route path="overview"      element={<Suspense fallback={<PageLoader />}><Overview /></Suspense>} />
           <Route path="alerts"        element={<Suspense fallback={<PageLoader />}><Alerts /></Suspense>} />
           <Route path="cu-setup"      element={<Suspense fallback={<PageLoader />}><CuSetup /></Suspense>} />
+          <Route path="aks"           element={<Suspense fallback={<PageLoader />}><AksHealth /></Suspense>} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -15,7 +15,7 @@ export function KpiCard({ label, value, subLabel, severity = 'neutral', icon }: 
     'text-emerald-400': severity === 'good',
     'text-amber-400':   severity === 'warning',
     'text-red-400':     severity === 'critical',
-    'text-white':       severity === 'neutral',
+    'text-gray-900':    severity === 'neutral',
   });
 
   return (

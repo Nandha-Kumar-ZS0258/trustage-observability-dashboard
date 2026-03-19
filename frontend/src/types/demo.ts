@@ -13,6 +13,7 @@ export interface PipelineLogEvent {
   level: 'info' | 'warn' | 'error';
   message: string;
   timestamp: string;
+  source?: 'history' | 'live';
 }
 
 export interface DemoUploadResult {

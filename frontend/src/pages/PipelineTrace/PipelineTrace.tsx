@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   RotateCcw, CheckCircle2, AlertTriangle, XCircle,
   Clock, ChevronRight, CloudUpload, Cpu, FileCheck, ShieldCheck,
-  Scale, Database,
+  Scale, Database, Activity,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { format, parseISO } from 'date-fns';
@@ -33,7 +33,7 @@ const STAGE_COLORS: Record<StageStatus, { bar: string; icon: string; pill: strin
 // Kafka listener tab config
 type LogTab = 'all' | PipelineStage;
 const LOG_TABS: { id: LogTab; label: string; stageId: PipelineStage | null }[] = [
-  { id: 'all',              label: 'All Logs',                  stageId: null },
+  { id: 'all',              label: 'All',                       stageId: null },
   { id: 'blob',             label: 'BlobTrigger',               stageId: 'blob' },
   { id: 'ingestion',        label: 'IngestionListener',         stageId: 'ingestion' },
   { id: 'transform',        label: 'TransformListener',         stageId: 'transform' },
@@ -41,6 +41,16 @@ const LOG_TABS: { id: LogTab; label: string; stageId: PipelineStage | null }[] =
   { id: 'rulesValidation',  label: 'RulesValidationListener',   stageId: 'rulesValidation' },
   { id: 'publishing',       label: 'PublishingListener',        stageId: 'publishing' },
 ];
+
+// History window options (hours)
+const HISTORY_WINDOWS = [
+  { hours: 1,   label: '1h' },
+  { hours: 6,   label: '6h' },
+  { hours: 24,  label: '24h' },
+  { hours: 168, label: '7d' },
+] as const;
+
+type SourceFilter = 'all' | 'history' | 'live';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -81,7 +91,9 @@ function StageCard({ stage }: { stage: StageInfo }) {
   );
 }
 
-function LevelBadge({ level }: { level: string }) {
+function LevelBadge({ level, source }: { level: string; source?: 'history' | 'live' }) {
+  if (source === 'history')
+    return <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: '#F1F5F9', color: '#94A3B8' }}>HIST</span>;
   if (level === 'warn')
     return <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: '#FEF3C7', color: '#92400E' }}>WARN</span>;
   if (level === 'error')
@@ -90,18 +102,39 @@ function LevelBadge({ level }: { level: string }) {
 }
 
 function LogRow({ log }: { log: PipelineLogEvent }) {
+  const isHist = log.source === 'history';
   return (
-    <div className="flex items-start gap-2 py-0.5">
+    <div className="flex items-start gap-2 py-0.5" style={{ opacity: isHist ? 0.65 : 1 }}>
       <span className="shrink-0 text-[10px] tabular-nums w-16" style={{ color: '#94A3B8' }}>
         {format(parseISO(log.timestamp), 'HH:mm:ss')}
       </span>
-      <LevelBadge level={log.level} />
+      <LevelBadge level={log.level} source={log.source} />
       <span
         className="text-[11px] leading-relaxed break-all flex-1"
-        style={{ color: log.level === 'warn' ? '#92400E' : log.level === 'error' ? '#991B1B' : '#334155' }}
+        style={{
+          color: isHist        ? '#94A3B8'
+               : log.level === 'warn'  ? '#92400E'
+               : log.level === 'error' ? '#991B1B'
+               : '#334155',
+        }}
       >
         {log.message}
       </span>
+    </div>
+  );
+}
+
+function LiveDivider() {
+  return (
+    <div className="flex items-center gap-2 my-2 select-none">
+      <div className="flex-1 border-t" style={{ borderColor: '#CBD5E1' }} />
+      <div className="flex items-center gap-1.5">
+        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+        <span className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: '#94A3B8' }}>
+          Live
+        </span>
+      </div>
+      <div className="flex-1 border-t" style={{ borderColor: '#CBD5E1' }} />
     </div>
   );
 }
@@ -126,26 +159,41 @@ function SummaryStatCard({ label, value, color }: { label: string; value: number
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function Demo() {
-  const { stages, allLogs, summary, reset } = useDemo();
-  const [activeTab, setActiveTab] = useState<LogTab>('all');
+export default function PipelineTrace() {
+  const {
+    stages, allLogs, liveLogs,
+    summary, historyLoading, historyError, historyHours, setHistoryHours, reset,
+  } = useDemo();
+
+  const [activeTab,     setActiveTab]     = useState<LogTab>('all');
+  const [sourceFilter,  setSourceFilter]  = useState<SourceFilter>('all');
   const logBottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new logs arrive on the active tab
+  // Auto-scroll to bottom when new live events arrive
   useEffect(() => {
-    logBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allLogs.length]);
+    if (liveLogs.length > 0)
+      logBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [liveLogs.length]);
 
   const handleReset = useCallback(() => {
     reset();
     setActiveTab('all');
+    setSourceFilter('all');
   }, [reset]);
 
-  // Logs for the active tab
+  // ── Derive logs for the active tab ────────────────────────────────────────
   const activeTabConfig = LOG_TABS.find(t => t.id === activeTab)!;
-  const activeLogs: PipelineLogEvent[] = activeTabConfig.stageId === null
+  const tabLogs: PipelineLogEvent[] = activeTabConfig.stageId === null
     ? allLogs
     : (stages.find(s => s.id === activeTabConfig.stageId)?.logs ?? []);
+
+  // Apply source filter
+  const filteredLogs: PipelineLogEvent[] = sourceFilter === 'all'
+    ? tabLogs
+    : tabLogs.filter(l => l.source === sourceFilter);
+
+  // Index of the first live log in the *unfiltered* tab list (used for the divider)
+  const firstLiveIdx = tabLogs.findIndex(l => l.source === 'live');
 
   // Badge: non-info count per stage tab
   const stageBadge = (stageId: PipelineStage) =>
@@ -157,8 +205,11 @@ export default function Demo() {
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="bg-white border-b px-6 h-14 flex items-center justify-between" style={{ borderColor: '#E2E8F0' }}>
         <div className="flex items-center gap-3">
-          <h1 className="text-base font-bold" style={{ color: NAVY }}>Pipeline Demo</h1>
-          <span className="text-xs" style={{ color: '#64748B' }}>Watch the adaptor pipeline process your file in real-time</span>
+          <Activity className="w-4 h-4" style={{ color: NAVY }} />
+          <h1 className="text-base font-bold" style={{ color: NAVY }}>Pipeline Trace</h1>
+          <span className="text-xs" style={{ color: '#64748B' }}>
+            Live adaptor pipeline events — streamed from Kafka listeners in real-time
+          </span>
         </div>
         <button
           onClick={handleReset}
@@ -210,18 +261,56 @@ export default function Demo() {
           </div>
         </div>
 
-        {/* ── 2. Live Logs (tabbed by Kafka listener) ───────────────────────── */}
+        {/* ── 2. Log Panel ─────────────────────────────────────────────────── */}
         <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
-          {/* Header */}
+
+          {/* Header row */}
           <div className="px-5 py-3 flex items-center justify-between"
             style={{ background: NAVY, borderRadius: '12px 12px 0 0' }}>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-[13px] font-bold text-white">2. Live Logs</span>
+              <span className="text-[13px] font-bold text-white">Logs</span>
+              <span className="text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>
+                {allLogs.length} event{allLogs.length !== 1 ? 's' : ''}
+              </span>
             </div>
-            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>
-              {allLogs.length} event{allLogs.length !== 1 ? 's' : ''}
-            </span>
+
+            {/* Right side controls */}
+            <div className="flex items-center gap-3">
+              {/* History window selector */}
+              <div className="flex items-center gap-0.5 rounded-md overflow-hidden" style={{ border: '1px solid rgba(255,255,255,.15)' }}>
+                {HISTORY_WINDOWS.map(w => (
+                  <button
+                    key={w.hours}
+                    onClick={() => setHistoryHours(w.hours)}
+                    className="text-[10px] font-medium px-2 py-1 transition-colors"
+                    style={{
+                      background: historyHours === w.hours ? 'rgba(255,255,255,.2)' : 'transparent',
+                      color:      historyHours === w.hours ? 'white' : 'rgba(255,255,255,.45)',
+                    }}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Source filter */}
+              <div className="flex items-center gap-0.5 rounded-md overflow-hidden" style={{ border: '1px solid rgba(255,255,255,.15)' }}>
+                {(['all', 'history', 'live'] as SourceFilter[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setSourceFilter(f)}
+                    className="text-[10px] font-medium px-2 py-1 capitalize transition-colors"
+                    style={{
+                      background: sourceFilter === f ? 'rgba(255,255,255,.2)' : 'transparent',
+                      color:      sourceFilter === f ? 'white' : 'rgba(255,255,255,.45)',
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Kafka listener tabs */}
@@ -262,10 +351,27 @@ export default function Demo() {
             className="h-80 overflow-y-auto p-4 space-y-0.5"
             style={{ background: '#F8FAFC', fontFamily: "'IBM Plex Mono', monospace" }}
           >
-            {activeLogs.length === 0 ? (
-              <p className="text-[12px] italic" style={{ color: '#94A3B8' }}>Waiting for events…</p>
+            {historyLoading ? (
+              <p className="text-[12px] italic" style={{ color: '#94A3B8' }}>Loading history…</p>
+            ) : historyError ? (
+              <p className="text-[12px]" style={{ color: '#991B1B' }}>{historyError}</p>
+            ) : filteredLogs.length === 0 ? (
+              <p className="text-[12px] italic" style={{ color: '#94A3B8' }}>
+                {sourceFilter === 'live' ? 'Waiting for live events…' : 'No events in the selected window.'}
+              </p>
             ) : (
-              activeLogs.map((log, i) => <LogRow key={i} log={log} />)
+              filteredLogs.map((log, i) => {
+                // When showing all sources, insert the Live divider where history ends
+                const showDivider = sourceFilter === 'all'
+                  && firstLiveIdx > 0
+                  && i === firstLiveIdx;
+                return (
+                  <div key={i}>
+                    {showDivider && <LiveDivider />}
+                    <LogRow log={log} />
+                  </div>
+                );
+              })
             )}
             <div ref={logBottomRef} />
           </div>

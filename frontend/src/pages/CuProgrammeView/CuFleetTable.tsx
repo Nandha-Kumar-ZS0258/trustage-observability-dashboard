@@ -154,7 +154,7 @@ const HEALTH_OPTIONS: HealthStatus[] = ['Healthy', 'Overdue', 'Failed', 'Awaitin
 function FilterBar({ filters, onChange }: { filters: Filters; onChange: (f: Filters) => void }) {
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex items-center gap-2">
       <input
         type="search"
         className="input text-sm py-1.5 w-52"
@@ -221,7 +221,7 @@ export function CuFleetTable() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <h3 className="text-sm font-bold text-[#0F2744]">CU Partner Fleet</h3>
         <FilterBar filters={filters} onChange={setFilters} />
       </div>
